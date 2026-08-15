@@ -1,0 +1,112 @@
+========================================================================================
+VarWISE EXTENDED CATALOG - reliability audit
+========================================================================================
+
+Pure: 457,080   Extended: 1,918,082   Extended-only: 1,461,002
+Pure-tier criteria applied to Extended reproduce 858,516 rows (DOES NOT match the Pure count)
+  (blended_source and latent_artifact are probabilities in [0.04, 1.00],
+   not 0/1 flags -- the Pure tier caps both at 0.500.)
+
+========================================================================================
+FINDING 1 - the recommended `confidence` cut does not protect period validity
+========================================================================================
+
+`rr` (RR Lyrae). Physical period range 0.20-1.00 d; >= 2.0 d is unphysical.
+
+  cut                                                    n   physical    P>=2d
+  no cuts                                          443,991      23.2%    46.5%
+  confidence >= 0.8                                205,311      19.9%    47.3%
+  confidence >= 0.9  (authors' recommendation)     124,026      19.8%    47.0%
+  confidence >= 0.99                                21,045      41.4%    28.6%
+  full Pure-tier criteria                          116,941      23.1%    43.7%
+  confidence >= 0.9 AND suspect_period = 0         123,774      19.9%    46.9%
+  period_significance > 20                          12,861      71.3%     0.1%
+  confidence >= 0.9 AND period_significance > 20    11,351      72.4%     0.1%
+
+  Pure `rr` for comparison (independently audited, F1 0.948):
+  no cuts                                           12,752      69.7%     0.5%
+  confidence >= 0.8                                 12,664      69.6%     0.5%
+  confidence >= 0.9  (authors' recommendation)      12,096      70.2%     0.4%
+  confidence >= 0.99                                 9,246      73.5%     0.2%
+
+  => `confidence` measures certainty in the CLASS, not in the PERIOD.
+     Raising it from 0 to 0.9 leaves the period distribution essentially
+     unchanged. `suspect_period` catches almost none of it. Only a cut on
+     `period_significance` fixes the sample -- and that cut is not among
+     the published recommendations.
+
+========================================================================================
+FINDING 2 - per-class period plausibility at the recommended cut
+========================================================================================
+
+  class         range (d)  n (conf>=0.9)   physical  beyond 2x
+  rr              0.2 - 1        124,026      19.8%      47.0%
+  cep             1 - 100          7,741      83.9%      12.9%
+  ew           0.15 - 1.5        116,228      87.5%       5.9%
+  ea           0.3 - 1000         55,976      96.6%       0.0%
+  lpv           30 - 3000        411,270      38.7%       0.0%
+
+  Same classes in the Pure tier:
+  class         range (d)  n (conf>=0.9)   physical  beyond 2x
+  rr              0.2 - 1         12,096      70.2%       0.4%
+  cep             1 - 100          2,788      95.2%       3.6%
+  ew           0.15 - 1.5         69,070      95.0%       0.4%
+  ea           0.3 - 1000         43,113      96.4%       0.0%
+  lpv           30 - 3000        158,467      56.7%       0.0%
+
+========================================================================================
+FINDING 3 - population-level sanity check
+========================================================================================
+
+Gaia DR3's validated all-sky RR Lyrae catalogue: 270,905 objects
+(Clementini et al. 2023, A&A 674, A18).
+
+  sample                                                       n   x Gaia
+  Extended `rr`, no cuts                                 443,991    1.64x
+  Extended `rr`, confidence >= 0.9                       124,026    0.46x
+  Extended `rr`, conf >= 0.9 + physical period            24,607    0.09x
+  Extended `rr`, conf >= 0.9 + period_significance > 20    11,351    0.04x
+
+  RR Lyrae are among the best-inventoried variable classes in astronomy,
+  and their amplitudes are weakest in the mid-infrared. A raw Extended
+  `rr` count of 1.64x the entire validated Gaia sample is not credible;
+  after an effective period cut it falls to a plausible fraction.
+
+========================================================================================
+FINDING 4 - the confidence cut silently deletes the rule-assigned classes
+========================================================================================
+
+  class         no cuts   conf>=0.9   retained
+  lpv           664,671     411,270      61.9%
+  rr            443,991     124,026      27.9%
+  ew            349,398     116,228      33.3%
+  agn           187,428     162,235      86.6%
+  ea             95,765      55,976      58.5%
+  cv             69,418       7,217      10.4%
+  yso            24,827       9,601      38.7%
+  cep            21,142       7,741      36.6%
+  sn              9,875           0       0.0%
+  unclear        51,567           0       0.0%
+
+  `cv` and `sn` are assigned by the transient rule, not the classifier,
+  and carry no confidence value. A user applying the recommended cut
+  therefore drops 100% of `sn` and ~90% of `cv` without being told why.
+  This is protective by accident, but it means published `cv`/`sn` counts
+  and any confidence-filtered analysis describe different samples.
+
+========================================================================================
+RECOMMENDED CUTS FOR EXTENDED-TIER USERS
+========================================================================================
+
+  1. For any period-dependent use, add `period_significance > 20`. The
+     published `confidence >= 0.9` recommendation does not constrain period
+     validity at all, and `suspect_period` catches under 1% of the problem
+     in the Extended `rr` class.
+
+  2. Treat `cv` and `sn` as a separate, rule-assigned product. They are not
+     classifier output, carry no confidence, and the paper's own visual
+     inspection reports only 9% of `sn` as solid candidates.
+
+  3. Apply a class-appropriate period sanity range before population
+     statistics. Roughly 47% of Extended `rr` sits beyond 2 d at every
+     confidence threshold below 0.99.

@@ -1,0 +1,77 @@
+================================================================================
+CLOSING THE YSO RECALL GAP
+================================================================================
+
+  objects: 220,471   YSOs: 11,998 (5.44%)
+  features: 28 (known_extragalactic excluded as leakage)
+
+  VarWISE baseline (from the Pure Catalog audit):
+    precision 0.940   recall 0.436   F1 0.595
+
+  binary YSO classifier, 5-fold CV
+    average precision (area under PR curve): 0.9730
+
+================================================================================
+OPERATING POINTS - pick recall vs precision explicitly
+================================================================================
+
+   threshold   precision    recall       F1   n flagged
+        0.10       0.831     0.981    0.900      14,167
+        0.25       0.864     0.975    0.916      13,545
+        0.50       0.890     0.965    0.926      13,009
+        0.75       0.913     0.949    0.931      12,461
+        0.90       0.932     0.923    0.928      11,880
+        0.95       0.944     0.901    0.922      11,444
+
+================================================================================
+HEAD TO HEAD WITH VarWISE
+================================================================================
+
+  (a) Matching VarWISE's precision (0.940):
+      recall 0.910 vs VarWISE 0.436  (2.09x)
+      threshold 0.936, precision 0.940
+
+  (b) Matching VarWISE's recall (0.436):
+      precision 0.992 vs VarWISE 0.940
+
+  (c) Best F1 operating point:
+      F1 0.931 vs VarWISE 0.595  (precision 0.915, recall 0.948, threshold 0.761)
+
+================================================================================
+WHAT THE HARD YSOs LOOK LIKE
+================================================================================
+
+  group                            n    W1-W2      W1   W1 amp   varSNR
+  YSOs recovered              11,582    0.680   11.91    0.232    11.29
+  YSOs still missed              416    0.334   11.40    0.205    10.28
+  LPVs (contaminant)          64,136    0.047    8.62    0.110     9.46
+
+  If the missed YSOs sit closer to the LPV locus than the recovered
+  ones, the residual failure is genuine physical overlap rather than
+  a modelling shortfall.
+
+  Most informative features for YSO identification:
+    bp_rp                    2030
+    n_obs                    1769
+    w1_w2                    1740
+    w3_w4                    1708
+    w2_w3                    1691
+    period_significance      1641
+    j_h                      1634
+    w1mag                    1439
+    g_rp                     1413
+    log_plx                  1370
+
+================================================================================
+CAVEATS
+================================================================================
+
+  - This is not a like-for-like contest. VarWISE's classifier was trained on
+    Gaia/ZTF labels and is evaluated here against SIMBAD; this classifier is
+    both trained and evaluated on SIMBAD, so it has the easier task by
+    construction. The comparison shows that the information needed for
+    higher recall is present in the catalog columns -- not that this model
+    would beat theirs on their own training distribution.
+  - SIMBAD YSO labels include ~58% YSO_Candidate, which are less certain.
+  - Restricted to the 220,471 objects carrying a mapped SIMBAD type, which
+    skew bright.

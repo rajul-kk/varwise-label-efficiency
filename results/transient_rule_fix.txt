@@ -1,0 +1,110 @@
+====================================================================================
+REPLACING THE VarWISE CV/SN TRANSIENT RULE WITH A CLASSIFIER
+====================================================================================
+
+Rule-assigned transients with an independent SIMBAD label: 14,955
+  assigned cv: 11,576   assigned sn: 3,379
+
+What they actually are (SIMBAD):
+  lpv      8,338   55.75%
+  agn      3,600   24.07%
+  yso      2,576   17.23%
+  cv         226    1.51%
+  ecl        160    1.07%
+  cep         24    0.16%
+  sn          20    0.13%
+  rr          11    0.07%
+
+Dropping classes with < 30 members: {'cep': 24, 'sn': 20, 'rr': 11}
+
+====================================================================================
+BASELINE - the rule as published
+====================================================================================
+
+  accuracy on this population: 0.0149  (222 of 14,900 correct)
+  macro F1: 0.0076
+
+  The rule can only ever emit `cv` or `sn`, so every object that is
+  really an LPV, AGN or YSO is necessarily wrong.
+
+====================================================================================
+LEARNED CLASSIFIER - feature set: with_xmatch (29 features)
+====================================================================================
+
+  5-fold cross-validated, class-balanced LightGBM
+
+              precision    recall  f1-score   support
+
+         agn      0.983     0.990     0.986      3600
+          cv      0.940     0.903     0.921       226
+         ecl      0.541     0.375     0.443       160
+         lpv      0.985     0.972     0.979      8338
+         yso      0.901     0.953     0.926      2576
+
+    accuracy                          0.966     14900
+   macro avg      0.870     0.838     0.851     14900
+weighted avg      0.965     0.966     0.965     14900
+
+  accuracy: 0.9655   macro F1: 0.8511
+
+====================================================================================
+LEARNED CLASSIFIER - feature set: photometry (28 features)
+====================================================================================
+
+  5-fold cross-validated, class-balanced LightGBM
+
+              precision    recall  f1-score   support
+
+         agn      0.980     0.988     0.984      3600
+          cv      0.932     0.903     0.917       226
+         ecl      0.560     0.406     0.471       160
+         lpv      0.986     0.973     0.979      8338
+         yso      0.905     0.951     0.927      2576
+
+    accuracy                          0.965     14900
+   macro avg      0.872     0.844     0.856     14900
+weighted avg      0.965     0.965     0.965     14900
+
+  accuracy: 0.9654   macro F1: 0.8556
+
+====================================================================================
+HEAD TO HEAD
+====================================================================================
+
+  method                         accuracy   macro F1    cv F1    sn F1
+  rule as published                0.0149     0.0076    0.038      nan
+  classifier (with_xmatch)         0.9655     0.8511    0.921      nan
+  classifier (photometry)          0.9654     0.8556    0.917      nan
+
+====================================================================================
+WHAT THE CLASSIFIER RECOVERS FROM THE RULE'S FALSE POSITIVES
+====================================================================================
+
+  actually       n  rule correct  clf correct  recovered
+  agn        3,600             0        3,563     +3,563
+  cv           226           222          204        -18
+  ecl          160             0           60        +60
+  lpv        8,338             0        8,104     +8,104
+  yso        2,576             0        2,455     +2,455
+
+  Confusion matrix of the learned classifier (rows = SIMBAD truth):
+             agn      cv     ecl     lpv     yso
+  agn      3,563       2       2       2      31
+  cv           2     204       7       5       8
+  ecl          6       7      60      28      59
+  lpv         36       2      25   8,104     171
+  yso         17       2      17      85   2,455
+
+====================================================================================
+CAVEATS
+====================================================================================
+
+  - Evaluated only on rule-assigned objects that carry a SIMBAD type (37.3%
+    of `cv`, 35.3% of `sn`), and those are systematically brighter than the
+    ones without. The classifier is therefore validated on the bright end.
+  - Only 222 genuine CVs and 8 genuine SNe survive in this population, so
+    the cv/sn columns of the report rest on small numbers.
+  - The comparison is deliberately favourable to the classifier in one
+    respect: the rule was never designed to output lpv/agn/yso, so it cannot
+    win on those. The useful reading is not "the rule is bad" but "this
+    population is recoverable, and a classifier recovers most of it".
