@@ -39,8 +39,50 @@ def labels_to_reach(n_labels: np.ndarray, scores: np.ndarray, target: float):
     return float(x0 + (target - y0) * (x1 - x0) / (y1 - y0))
 
 
+def savings_vs_random_endpoint(curves: pd.DataFrame, metric: str):
+    """Primary label-savings metric.
+
+    Normalising against the full-supervised reference breaks on this dataset:
+    active learning *exceeds* the 120k-label reference on macro-F1 (because
+    the reference is trained on the natural distribution and suppresses the
+    rare classes), so "labels to reach 95% of reference" is satisfied in the
+    first round and the ratio is meaningless.
+
+    Instead, take the score random sampling achieves at the full label budget
+    and ask how many labels each active strategy needs to match it. That is a
+    like-for-like statement -- same task, same budget ceiling, same estimator
+    -- and it is the quantity a practitioner actually cares about: how much
+    labeling effort is avoided to get what random would have given you.
+    """
+    mean_curve = (curves.groupby(["strategy", "n_labels"])[metric]
+                  .mean().reset_index())
+    rnd = mean_curve[mean_curve.strategy == "random"].sort_values("n_labels")
+    if rnd.empty:
+        return pd.DataFrame()
+    budget = int(rnd.n_labels.max())
+    target = float(rnd[rnd.n_labels == budget][metric].iloc[0])
+
+    rows = []
+    for strat in sorted(mean_curve.strategy.unique()):
+        s = mean_curve[mean_curve.strategy == strat].sort_values("n_labels")
+        n_s = labels_to_reach(s.n_labels.values, s[metric].values, target)
+        rows.append({
+            "metric": metric, "random_budget": budget, "random_score": target,
+            "strategy": strat, "labels_to_match": n_s,
+            "label_saving": (budget - n_s) / budget if n_s is not None else None,
+            "final_score": float(s[metric].iloc[-1]),
+        })
+    return pd.DataFrame(rows)
+
+
 def savings_table(curves: pd.DataFrame, refs: pd.DataFrame, metric: str):
-    """Label savings vs random for one metric column, at each target."""
+    """Secondary metric: label savings referenced to full supervision.
+
+    Retained for comparability with studies that report it, but see
+    savings_vs_random_endpoint -- on this dataset the full-supervised
+    reference is *below* what active learning achieves, so these numbers
+    saturate and should not be read as the headline.
+    """
     ref_mean = refs[metric].mean()
     mean_curve = (curves.groupby(["strategy", "n_labels"])[metric]
                   .mean().reset_index())
@@ -100,8 +142,56 @@ def main():
     tab = pd.concat(all_tables, ignore_index=True)
     tab.to_csv(rdir / f"savings_track_{track}.csv", index=False)
 
-    # ---- headline: overall macro-F1 savings ----
-    print("\n--- Overall macro-F1 label savings vs random ---")
+    # ---- headline: labels needed to match random's endpoint ----
+    print("\n--- PRIMARY: labels needed to match random sampling's final score ---")
+    prim_all = []
+    for metric in ["macro_f1", "balanced_acc"] + [f"f1_{c}" for c in classes]:
+        if metric not in curves.columns:
+            continue
+        t = savings_vs_random_endpoint(curves, metric)
+        if not t.empty:
+            prim_all.append(t)
+    prim = pd.concat(prim_all, ignore_index=True)
+    prim.to_csv(rdir / f"primary_savings_track_{track}.csv", index=False)
+
+    for metric in ("macro_f1", "balanced_acc"):
+        sub = prim[prim.metric == metric]
+        if sub.empty:
+            continue
+        b = int(sub.random_budget.iloc[0])
+        tgt = sub.random_score.iloc[0]
+        print(f"\n  {metric}: random reaches {tgt:.4f} at {b} labels")
+        for _, r in sub.iterrows():
+            if r.strategy == "random":
+                continue
+            if pd.isna(r.labels_to_match):
+                print(f"    {r.strategy:<15} never matched "
+                      f"(final {r.final_score:.4f})")
+            else:
+                print(f"    {r.strategy:<15} matched at {r.labels_to_match:>6.0f} "
+                      f"labels  saving={r.label_saving:>6.1%}  "
+                      f"(final {r.final_score:.4f})")
+
+    print("\n  per-class (labels to match random's final class F1):")
+    print(f"    {'class':<8}{'rand F1':>9}  " +
+          "".join(f"{s:>15}" for s in
+                  [x for x in sorted(curves.strategy.unique()) if x != "random"]))
+    for c in sorted(classes, key=lambda z: prev[z]):
+        sub = prim[prim.metric == f"f1_{c}"]
+        if sub.empty:
+            continue
+        line = f"    {c:<8}{sub.random_score.iloc[0]:>9.3f}  "
+        for s in [x for x in sorted(curves.strategy.unique()) if x != "random"]:
+            r = sub[sub.strategy == s]
+            if r.empty or pd.isna(r.labels_to_match.iloc[0]):
+                line += f"{'never':>15}"
+            else:
+                line += f"{r.label_saving.iloc[0]:>14.1%} "
+        print(line)
+
+    # ---- secondary: overall macro-F1 savings vs full supervision ----
+    print("\n--- SECONDARY: savings referenced to full supervision "
+          "(saturates; see note) ---")
     m = tab[(tab.metric == "macro_f1")]
     for target in TARGETS:
         sub = m[m.target_frac == target]
