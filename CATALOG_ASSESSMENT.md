@@ -91,9 +91,53 @@ of `sn`** and **89.6% of `cv`** — without the user being told why. Protective
 by accident, but it means published class counts and any confidence-filtered
 analysis describe different samples.
 
+### Independent physical confirmation: period–luminosity
+
+The argument above rests on *range plausibility* — RR Lyrae cannot have 5-day
+periods. That is sound but weak, since it uses only the period's own value. A
+period–luminosity test is independent and much stronger: RR Lyrae are
+horizontal-branch stars sitting at **M_W1 ≈ −0.5**, nearly independent of
+period, so an object claiming to be one that sits three magnitudes fainter is
+not one, whatever its period looks like.
+
+Using Gaia parallaxes (S/N > 5), M_W1 = W1 + 5·log₁₀(plx_mas) − 10
+(`scripts/pl_relation_check.py`):
+
+| sample | n | median M_W1 | offset from −0.5 |
+|---|---|---|---|
+| **Pure `rr`, all** | 6,671 | **−0.59** | −0.09 |
+| Pure `rr`, confidence ≥ 0.9 | 6,191 | −0.62 | −0.12 |
+| Pure `rr`, `period_significance` > 20 | 6,302 | −0.61 | −0.11 |
+| **Extended `rr`, all** | 221,982 | **+2.51** | **+3.01** |
+| **Extended `rr`, confidence ≥ 0.9** *(paper's cut)* | 71,378 | **+2.47** | **+2.97** |
+| **Extended `rr`, `period_significance` > 20** | 7,624 | **−0.55** | **−0.05** |
+
+Three results, all independent of the period-range argument:
+
+1. **Pure `rr` sits exactly on the RR Lyrae locus**, confirming from physics
+   that it is a clean sample — consistent with its measured F1 of 0.948.
+2. **Extended `rr` sits ~3 magnitudes too faint.** Those objects are not RR
+   Lyrae. The paper's recommended `confidence ≥ 0.9` barely moves it
+   (+2.97).
+3. **`period_significance > 20` returns the sample to the correct locus**
+   (−0.55), recovering 7,624 objects that behave like genuine RR Lyrae.
+
+PL-relation scatter tells the same story: Extended `rr` scatter is 1.063
+with no cuts and 0.938 at confidence ≥ 0.9, but **0.467 at
+`period_significance` > 20** — essentially matching Pure's 0.433.
+
+**Negative result, reported as such:** the same test on LPVs is
+uninformative. Scatter stays at 2.4–3.1 under every cut, and
+`period_significance` does not help. This is expected — Miras, semiregulars
+and overtone pulsators occupy different PL sequences, so a single fit cannot
+be tight. The LPV periods are neither validated nor impugned by this test.
+
 ### Recommended cuts for Extended-tier users
 
-1. For any period-dependent use, add **`period_significance > 20`**.
+1. For any period-dependent use, add **`period_significance > 20`**. This is
+   now supported two ways: it is the only cut that restores physical period
+   distributions, and it is the only cut that returns Extended `rr` to the
+   correct absolute magnitude.
 2. Treat `cv`/`sn` as a separate, rule-assigned product — not classifier output.
 3. Apply a class-appropriate period sanity range before population statistics.
 

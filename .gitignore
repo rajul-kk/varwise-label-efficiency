@@ -21,3 +21,4 @@ Thumbs.db
 
 # large intermediate
 data/raw/varwise_ext_transients.parquet
+data/raw/pl_sample.parquet

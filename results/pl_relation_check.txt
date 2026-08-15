@@ -1,0 +1,104 @@
+====================================================================================
+PERIOD-LUMINOSITY VALIDATION OF VarWISE PERIODS
+====================================================================================
+
+Sample: objects with a period and parallax S/N > 5
+  class        pure   extended
+  lpv        13,035     71,434
+  rr          6,671    221,982
+  cep         1,467      8,437
+
+M_W1 = W1 + 5*log10(plx_mas) - 10.  Scatter is a robust (MAD-based) sigma
+about an iteratively clipped straight-line fit; lower = periods more consistent
+with a physical PL relation.
+
+====================================================================================
+Q1 - does `period_significance` separate good periods from bad?
+====================================================================================
+
+  LPV  (both tiers, n = 84,469)
+  cut                                                  n   scatter      kept    slope
+  all objects                                     84,469     2.551      99.8%    -1.18
+  period_significance 0-5                          4,147     1.983      99.4%    -0.02
+  period_significance 5-10                        62,801     2.196      99.5%    -0.45
+  period_significance 10-20                       11,887     3.641     100.0%    -1.60
+  period_significance 20-50                        5,060     2.968      99.7%    -2.00
+  period_significance 50-inf                         574     1.896      97.6%    -0.67
+  ------------------------------------------------------------------------------
+  period_significance > 20  (recommended cut)      5,634     2.984      99.7%    -1.87
+  confidence >= 0.9  (paper's recommendation)     36,536     3.034      99.9%    -1.47
+  suspect_period = 0                              65,572     2.384      99.8%    -1.00
+
+  RR  (both tiers, n = 228,653)
+  cut                                                  n   scatter      kept    slope
+  all objects                                    228,653     1.119      96.9%     0.24
+  period_significance 0-5                          7,387     0.987      98.1%    -0.05
+  period_significance 5-10                       205,072     1.029      97.2%    -0.01
+  period_significance 10-20                        2,268     1.338      99.1%     0.31
+  period_significance 20-50                        7,317     0.523      92.1%    -0.13
+  period_significance 50-inf                       6,609     0.385      92.3%    -0.45
+  ------------------------------------------------------------------------------
+  period_significance > 20  (recommended cut)     13,926     0.440      91.3%    -0.30
+  confidence >= 0.9  (paper's recommendation)     77,569     1.255      99.2%     1.13
+  suspect_period = 0                             227,600     1.123      97.0%     0.28
+
+====================================================================================
+Q2 - do Extended-tier periods obey the relation as well as Pure?
+====================================================================================
+
+  LPV
+  sample                                               n   scatter      kept    slope
+  pure, no cuts                                   13,035     2.948      99.9%    -1.49
+  pure, confidence >= 0.9                          9,526     2.762      99.7%    -1.63
+  pure, period_significance > 20                   2,671     2.929      99.7%    -1.94
+  extended, no cuts                               71,434     2.441      99.8%    -1.05
+  extended, confidence >= 0.9                     27,010     3.074      99.9%    -1.40
+  extended, period_significance > 20               2,963     3.071      99.9%    -1.79
+
+  RR
+  sample                                               n   scatter      kept    slope
+  pure, no cuts                                    6,671     0.433      92.5%    -0.32
+  pure, confidence >= 0.9                          6,191     0.417      94.6%    -0.37
+  pure, period_significance > 20                   6,302     0.424      94.0%    -0.36
+  extended, no cuts                              221,982     1.063      96.3%     0.09
+  extended, confidence >= 0.9                     71,378     0.938      93.2%     0.42
+  extended, period_significance > 20               7,624     0.467      90.3%    -0.20
+
+====================================================================================
+RR LYRAE ABSOLUTE MAGNITUDE - the decisive test
+====================================================================================
+
+  Real RR Lyrae are horizontal-branch stars at M_W1 ~ -0.5,
+  nearly independent of period.
+
+  sample                                                  n   med M_W1   offset
+  Pure rr, all                                        6,671      -0.59    -0.09
+  Pure rr, confidence >= 0.9                          6,191      -0.62    -0.12
+  Pure rr, period_significance > 20                   6,302      -0.61    -0.11
+  Extended rr, all                                  221,982       2.51    +3.01
+  Extended rr, confidence >= 0.9  (paper's cut)      71,378       2.47    +2.97
+  Extended rr, period_significance > 20  (our cut)    7,624      -0.55    -0.05
+
+  => Pure `rr` sits exactly on the RR Lyrae locus, independently
+     confirming it is a clean sample.
+  => Extended `rr` sits ~3 magnitudes too faint. Those objects are
+     not RR Lyrae, regardless of what their periods look like.
+  => The paper's confidence cut does not fix this. Cutting on
+     `period_significance` returns the sample to the correct locus.
+
+====================================================================================
+CAVEATS
+====================================================================================
+
+  - Parallax-based absolute magnitudes carry Lutz-Kelker bias; a
+    parallax S/N > 5 cut keeps it modest but does not remove it.
+    All comparisons here are between subsamples drawn the same way, so the
+    bias affects them equally and the *relative* scatter is the meaningful
+    quantity.
+  - No extinction correction is applied. Mid-IR extinction is small but
+    non-zero, and it inflates scatter for objects in the Galactic plane.
+  - LPVs are not a single pulsation mode; Miras, semiregulars and overtone
+    pulsators occupy different PL sequences, so absolute LPV scatter is
+    expected to be large. Again, the comparison between cuts is what matters.
+  - Requires a parallax, so this tests only the subset bright and near enough
+    for Gaia -- the same brightness bias affecting the rest of this repo.
