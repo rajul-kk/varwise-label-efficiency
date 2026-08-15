@@ -22,8 +22,10 @@ warnings.filterwarnings("ignore", message=".*does not have valid feature names.*
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import balanced_accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -52,7 +54,65 @@ MAX_POOL = 120_000
 TEST_FRAC = 0.30
 
 
+ESTIMATOR = "lightgbm"
+
+
+class XGBStringLabels(BaseEstimator, ClassifierMixin):
+    """XGBClassifier that accepts string class labels.
+
+    XGBoost's sklearn API requires targets encoded as 0..n-1, but the AL loop
+    passes the catalog's string class names around and calls `clone()` on the
+    estimator each round. Wrapping keeps the encoder internal so the loop and
+    the metric functions can stay in label space.
+    """
+
+    # sklearn's clone() requires get_params() to round-trip through
+    # __init__, so `params` must be a single explicit constructor argument
+    # that is stored unmodified.
+    def __init__(self, params=None):
+        self.params = params
+
+    def get_params(self, deep=True):
+        return {"params": self.params}
+
+    def set_params(self, **kw):
+        if "params" in kw:
+            self.params = kw["params"]
+        return self
+
+    def fit(self, X, y):
+        from xgboost import XGBClassifier
+        self._le = LabelEncoder().fit(y)
+        self.classes_ = self._le.classes_
+        self._m = XGBClassifier(**(self.params or {}))
+        self._m.fit(X, self._le.transform(y))
+        return self
+
+    def predict(self, X):
+        return self._le.inverse_transform(self._m.predict(X))
+
+    def predict_proba(self, X):
+        return self._m.predict_proba(X)
+
+
 def make_estimator(n_classes: int, seed: int):
+    """VarWISE itself used XGBoost; LightGBM is the default here because it is
+    faster under the repeated refits an AL loop requires. `--estimator xgboost`
+    re-runs the study on their estimator family to confirm the effect is not
+    an artefact of the booster.
+    """
+    if ESTIMATOR == "xgboost":
+        return XGBStringLabels(params={
+            "n_estimators": 200,
+            "learning_rate": 0.1,
+            "max_depth": 6,
+            "subsample": 0.9,
+            "colsample_bytree": 0.9,
+            "random_state": seed,
+            "n_jobs": -1,
+            "tree_method": "hist",
+            "verbosity": 0,
+        })
     return LGBMClassifier(
         n_estimators=200,
         learning_rate=0.1,
@@ -231,7 +291,12 @@ def main():
     ap.add_argument("--keep-leaky", action="store_true",
                     help="retain known_extragalactic (sensitivity check)")
     ap.add_argument("--tag", default="", help="suffix for output filenames")
+    ap.add_argument("--estimator", choices=["lightgbm", "xgboost"],
+                    default="lightgbm")
     args = ap.parse_args()
+
+    global ESTIMATOR
+    ESTIMATOR = args.estimator
 
     run_track(args.track, args.seeds, args.rounds, args.batch_size,
               args.seed_per_class, keep_leaky=args.keep_leaky, tag=args.tag)

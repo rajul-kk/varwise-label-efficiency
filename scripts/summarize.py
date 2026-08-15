@@ -19,6 +19,10 @@ ROOT = Path(__file__).resolve().parents[1]
 RDIR = ROOT / "results"
 
 
+PCT_COLS = {"prevalence", "label saving"}
+INT_COLS = {"labels", "n_labels"}
+
+
 def md_table(df, floatfmt="{:.3f}"):
     cols = list(df.columns)
     out = ["| " + " | ".join(str(c) for c in cols) + " |",
@@ -28,7 +32,12 @@ def md_table(df, floatfmt="{:.3f}"):
         for c in cols:
             v = r[c]
             if isinstance(v, float) and np.isfinite(v):
-                cells.append(floatfmt.format(v))
+                if c in PCT_COLS:
+                    cells.append(f"{v:.2%}")
+                elif c in INT_COLS or str(c).startswith("labels to match"):
+                    cells.append(f"{v:,.0f}")
+                else:
+                    cells.append(floatfmt.format(v))
             elif v is None or (isinstance(v, float) and not np.isfinite(v)):
                 cells.append("n/a")
             else:
