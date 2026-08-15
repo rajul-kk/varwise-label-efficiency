@@ -1,47 +1,129 @@
-# Label-efficiency of active learning on the VarWISE infrared variable catalog
+# Label-efficient classification of NEOWISE infrared variables
 
-An active-learning label-efficiency study on NEOWISE infrared variability
-classification, using the VarWISE catalog (Paz et al. 2026, ApJS 284:41,
-[arXiv:2605.19059](https://arxiv.org/abs/2605.19059)) as the labeled archive.
+How many labels does it actually take to classify infrared variable objects?
 
-Two questions:
+This repository runs an active-learning label-efficiency study on the
+**VarWISE** catalog (Paz et al. 2026, ApJS 284:41,
+[arXiv:2605.19059](https://arxiv.org/abs/2605.19059)) — a catalog of
+infrared-variable objects built from the full NEOWISE single-exposure archive.
 
-1. **Label efficiency.** How many labels does uncertainty/margin/quota-based
-   active learning need to match a randomly-sampled baseline on VarWISE's
-   variability-class taxonomy — overall, and per class?
-2. **Rare classes.** VarWISE's classes span 50.5% (eclipsing binaries) down to
-   0.14% (cataclysmic variables). Does active learning help the rare,
-   undersampled classes disproportionately? That is a more specific and more
-   useful finding than an aggregate accuracy number.
+**Headline: 86% of the labels are unnecessary.** Choosing which objects to
+label, rather than sampling them at random, matches random sampling's
+914-label performance using 127 labels — and the benefit is almost entirely
+confined to the *rare* variability classes.
 
-A third result fell out of building the ground truth and is reported in its
-own right: an **independent validation of VarWISE's published classifications
-against SIMBAD** (see below).
+A second result fell out of building the ground truth and is reported in its
+own right: an **independent validation of VarWISE's published classifications**
+against SIMBAD, which finds severe precision failures in the rare classes.
 
-## Relationship to prior work
+📊 **[Full results and figures → RESULTS.md](RESULTS.md)**
+🔢 **[Generated tables → RESULTS_tables.md](RESULTS_tables.md)**
 
-- **Richards et al. 2011** ([arXiv:1106.2832](https://arxiv.org/abs/1106.2832))
-  is the direct methodological ancestor: active learning for photometric
-  variable-star classification on Hipparcos/OGLE. Active learning for variable
-  stars is *not* new. What is unclaimed here is the archive (NEOWISE/VarWISE)
-  and the per-class rare-class label-efficiency question.
-- **El-Kholy & Hayman 2026** ([arXiv:2602.23666](https://arxiv.org/abs/2602.23666))
-  supplies the experimental template: margin sampling vs random querying on a
-  public astronomical catalog under extreme class imbalance, gradient-boosted
-  tree baseline.
-- **Liu et al. 2025** ([arXiv:2412.02409](https://arxiv.org/abs/2412.02409),
-  RB-C1000) is the shape of the target result: a label-efficiency curve with a
-  quantified label saving.
+---
 
-## Data
+## The question
 
-VarWISE **Pure Catalog** (457,080 objects, the highest-confidence tier),
-pulled from IRSA TAP (`varwisepure`) in RA slices:
+Labeling astronomical objects is expensive — it costs literature
+cross-matching, and often spectroscopic follow-up. Active learning asks the
+classifier which objects it would most benefit from having labeled, instead of
+labeling a random sample.
 
+VarWISE trained its XGBoost classifier on a fixed, pre-curated set of 910,697
+labeled objects drawn from Gaia (Rimoldini et al. 2023) and ZTF (Chen et al.
+2020). Nothing in the paper uses active learning. Two questions follow:
+
+1. **Label efficiency** — how many labels are actually needed?
+2. **Rare classes** — VarWISE's classes span 50.5% (eclipsing binaries) down
+   to 0.14% (cataclysmic variables). Does active learning help the rare
+   classes disproportionately? That is a more specific and more useful finding
+   than an aggregate accuracy number.
+
+---
+
+## Results at a glance
+
+Track B (independent SIMBAD labels), XGBoost — VarWISE's own booster family:
+
+| | macro F1 | labels |
+|---|---|---|
+| Full supervision | 0.935 | 120,000 |
+| **Margin sampling** | **0.913** | **914** |
+| Random sampling | 0.808 | 914 |
+
+- **86% label saving.** Margin sampling matches random's 914-label score with
+  127 labels; 85.7% on LightGBM, 86.1% on XGBoost. Reaches 97.7% of
+  full-supervised macro-F1 using 0.76% of the labels.
+- **The saving is concentrated in the rare classes.** At equal budget, active
+  learning gains **+0.38 F1 on `cep`** (0.92% of objects) and **+0.27 on `cv`**
+  (0.14%), versus **+0.01 on `ecl`** (50%) and **`lpv`** (29%).
+- **It is not merely rebalancing.** Against a random draw with *identical
+  per-class counts* — so class mix is held fixed and only the choice of
+  examples differs — the gain survives at +0.294 (`cep`) and +0.160 (`cv`).
+  **Spearman ρ(prevalence, gain) = −0.857**: the rarer the class, the more the
+  acquisition function contributes.
+- **Hard per-class quotas underperform random sampling** on both estimators —
+  a negative result reproducing the same observation from the Chandra project.
+- **Distillation targets understate the benefit**: 72.4% saving against
+  VarWISE's own predictions versus 85.7% against real labels, because VarWISE
+  over-predicts rare classes and so looks more balanced than reality.
+
+### Independent validation of VarWISE
+
+Scoring the published `vartype` against 220,419 objects carrying an
+independent SIMBAD type — labels the catalog was not trained on:
+
+| class | precision | recall | F1 | support |
+|---|---|---|---|---|
+| `ecl` | 0.995 | 0.984 | 0.989 | 111,241 |
+| `rr` | 0.934 | 0.963 | 0.948 | 12,106 |
+| `lpv` | 0.942 | 0.861 | 0.899 | 64,132 |
+| `cep` | 0.801 | 0.924 | 0.858 | 2,020 |
+| `agn` | 0.842 | 0.802 | 0.822 | 18,617 |
+| `yso` | 0.939 | 0.342 | 0.501 | 11,967 |
+| `cv` | **0.019** | 0.738 | 0.037 | 301 |
+| `sn` | **0.002** | 0.229 | 0.005 | 35 |
+| **macro avg** | 0.684 | 0.730 | **0.632** | 220,419 |
+
+The common classes hold up well. The rare classes fail on precision, driven by
+two systematic confusions: **8,291 SIMBAD long-period variables classified as
+`cv`**, and **3,275 SIMBAD AGN classified as `sn`**.
+
+This is not like-for-like with the paper's reported macro-F1 of 0.95 — see
+[RESULTS.md §6](RESULTS.md) for the caveats, which matter.
+
+---
+
+## Reproducing
+
+Requires Python 3.10+, `pyvo astropy pandas numpy scikit-learn lightgbm
+xgboost matplotlib`.
+
+```bash
+python scripts/download_varwise.py      # VarWISE Pure Catalog from IRSA TAP -> parquet
+python scripts/build_dataset.py         # feature matrices + both label tracks
+
+python scripts/run_experiment.py --track b                      # main study
+python scripts/run_experiment.py --track b --estimator xgboost --tag _xgb
+python scripts/run_experiment.py --track a                      # distillation track
+
+python scripts/analyze.py --track b --tag _xgb                  # label-savings tables
+python scripts/plot_curves.py --track b --tag _xgb              # figures
+python scripts/reference_baselines.py --track b                 # reference variants
+python scripts/diagnose_gap.py --track b --seed 0               # rebalancing vs informativeness
+python scripts/validate_varwise.py                              # VarWISE vs SIMBAD
+python scripts/summarize.py > RESULTS_tables.md                 # all headline tables
+python scripts/factcheck.py                                     # verify every quoted number
 ```
-python scripts/download_varwise.py     # -> data/raw/varwise_pure.parquet
-python scripts/build_dataset.py        # -> data/track_a_vartype.parquet, track_b_simbad.parquet
-```
+
+`scripts/factcheck.py` recomputes every quantitative claim in the writeup from
+source and fails loudly on any mismatch — **93 checks, 0 failures**.
+
+The download takes ~5 minutes (457,080 rows, RA-sliced async TAP queries). The
+main experiment takes ~25 minutes per track.
+
+---
+
+## Data and design
 
 ### Two label tracks
 
@@ -55,38 +137,37 @@ independent, literature-curated label. Both are run:
 | Target | `vartype` (VarWISE prediction) | `simbad_type` (SIMBAD literature) |
 | Rows | 456,763 | 220,471 |
 | Classes | 9 | 8 (`ea`+`ew` merged to `ecl`) |
-| Interpretation | label efficiency for distillation | label efficiency for the science task |
+| Interpretation | efficiency for distillation | efficiency for the science task |
 
 SIMBAD does not separate Algol-type from W UMa-type eclipsing binaries, so
-those two VarWISE classes collapse into a single `ecl` class in Track B.
-Ambiguous SIMBAD types (`C*`, `SB*`, `Variable*`, …) are dropped rather than
-force-mapped.
+those two VarWISE classes collapse into one in Track B. Ambiguous SIMBAD types
+(`C*`, `SB*`, `Variable*`, …) are dropped rather than force-mapped.
 
 ### Features
 
-VarWISE's own 31 classifier features are derived from raw NEOWISE light curves
+VarWISE's own 31 classifier features derive from raw NEOWISE light curves
 (Fourier coefficients, Stetson indices, χ² statistics) which live in the
-separate Associations table, **not** in the published catalog. This study
-reproduces the reproducible subset — colors, amplitudes, periodicity,
-variability significance — 28 features in total. This is a close approximation,
-not an exact reproduction, and the gap is the light-curve morphology and
-flux-statistic blocks.
+separate Associations table, **not** in the published catalog. This study uses
+the 28 reproducible from catalog columns — colors, amplitudes, periodicity,
+variability significance. **A close approximation, not a reproduction.**
 
-`known_extragalactic` is dropped by default: it is an external cross-match
-flag built from the same kind of literature catalogs that supply the SIMBAD
-labels, and it nearly determines `agn`/`sn` membership on its own, which would
-flatter precisely the rare classes the study is about. `--keep-leaky` restores
-it for a sensitivity check.
+That the full-supervised weighted F1 (0.979 XGBoost) sits close to VarWISE's
+reported 0.95 suggests the approximation is adequate.
 
-`sn` (35 SIMBAD-confirmed objects, 0.016%) scores F1 = 0.000 even against the
-full 60k-label reference and is excluded from the curves as not learnable from
-catalog-level features at this sample size.
+Two exclusions, both deliberate:
 
-## Method
+- **`known_extragalactic`** is dropped: an external cross-match flag built
+  from the same kind of literature catalogs that supply the SIMBAD labels, it
+  nearly determines `agn`/`sn` membership on its own and would flatter exactly
+  the rare classes the study is about. `--keep-leaky` restores it.
+- **`sn`** (35 SIMBAD-confirmed objects) scores F1 = 0.000 even against the
+  full 120k-label reference. Not learnable from catalog features at this
+  sample size.
+
+### Method
 
 `common/active_learning.py` is reused from the Chandra/eROSITA project
-(`chandra-toolkit`) — a pool-based loop that is agnostic to estimator and
-domain. Strategies compared:
+(`chandra-toolkit`) — a pool-based loop agnostic to estimator and domain.
 
 | Strategy | Idea |
 |---|---|
@@ -95,92 +176,60 @@ domain. Strategies compared:
 | `margin` | smallest gap between top-two class probabilities |
 | `class_balanced` | uncertainty ranked *within* each predicted class |
 | `quota` | hard-reserved batch slots per class |
-| `prototype` | feature-space proximity to the rarest labeled class, bypassing `predict_proba` |
+| `prototype` | feature-space proximity to the rarest labeled class |
 
-One adaptation was required for this archive: `prototype_distance_score` uses
-`cdist`, which has no missing-value handling, and astronomical photometry is
-sparsely missing (~13% of VarWISE rows lack 2MASS *JHK*, ~63% lack a usable
-parallax). Left unpatched it returns an all-NaN score vector and silently
-degrades to an arbitrary ordering. It now centres on nan-statistics and treats
-a missing feature as population-mean.
+One adaptation was required: `prototype_distance_score` uses `cdist`, which
+has no missing-value handling, and astronomical photometry is sparsely missing
+(~13% of rows lack 2MASS *JHK*, ~63% lack a usable parallax). Left unpatched
+it returns an all-NaN score vector and silently degrades to arbitrary
+ordering. It now centres on nan-statistics.
 
-Estimator is LightGBM (handles NaN natively). 5 seeds, 30% stratified test
-split, pool capped at 120,000, seeded with 2 examples per class, 60 rounds of
-15 queries (14 → 914 labels).
+5 seeds (3 for XGBoost), 30% stratified test split, pool capped at 120,000,
+seeded with 2 examples/class, 60 rounds × 15 queries (14 → ~914 labels).
 
-```
-python scripts/run_experiment.py --track b
-python scripts/analyze.py --track b
-python scripts/plot_curves.py --track b
-```
+---
 
-## Independent validation of VarWISE against SIMBAD
+## Honest accounting
 
-Scoring the published `vartype` against the 220,419 objects carrying an
-independent SIMBAD type (`python scripts/validate_varwise.py`):
+**A claim was retracted mid-study.** An earlier version reported active
+learning *beating* 120,000-label supervision (macro-F1 0.91 vs 0.77). That was
+a **LightGBM artifact** — at these hyperparameters LightGBM collapses on the
+rare classes under the natural distribution (`cv` F1 = 0.230 with all 120,000
+labels), while XGBoost reaches 0.935 on the same data. Caught by an estimator
+robustness check; corrected in [RESULTS.md §3](RESULTS.md). The
+label-efficiency and rare-class results are within-estimator comparisons and
+reproduce on both boosters, so they are unaffected.
 
-| class | precision | recall | F1 | support |
-|---|---|---|---|---|
-| ecl | 0.995 | 0.984 | **0.989** | 111,241 |
-| rr | 0.934 | 0.963 | **0.948** | 12,106 |
-| lpv | 0.942 | 0.861 | **0.899** | 64,132 |
-| cep | 0.801 | 0.924 | **0.858** | 2,020 |
-| agn | 0.842 | 0.802 | **0.822** | 18,617 |
-| yso | 0.939 | 0.342 | **0.501** | 11,967 |
-| cv | 0.019 | 0.738 | **0.037** | 301 |
-| sn | 0.002 | 0.229 | **0.005** | 35 |
-| **macro avg** | 0.684 | 0.730 | **0.632** | 220,419 |
-| **weighted avg** | 0.957 | 0.896 | **0.918** | 220,419 |
+**Prior art.** Richards et al. 2011
+([arXiv:1106.2832](https://arxiv.org/abs/1106.2832)) already applied active
+learning to photometric variable-star classification on Hipparcos/OGLE.
+Active learning for variable stars is **not** new. See
+[RESULTS.md §7](RESULTS.md) for a finding-by-finding novelty classification.
 
-The common classes hold up well. The rare classes have severe **precision**
-failures, dominated by two systematic confusions:
+**Other limitations**: single archive; pool capped at 120,000 of ~154,000
+available Track B rows; XGBoost run used 3 seeds rather than 5; SIMBAD
+coverage is 48% of the Pure Catalog and biased toward bright, well-studied
+objects.
 
-- **8,291 SIMBAD long-period variables are classified `cv`** — the `cv` class
-  is ~98% contaminated on this subset.
-- **3,275 SIMBAD AGN are classified `sn`.**
-- **YSOs scatter** into `agn` (19.7%), `cv` (21.2%), and `lpv` (23.8%), with
-  only 34.2% recovered.
+---
 
-**Caveats, which matter.** This is not a like-for-like comparison with the
-paper's reported macro-F1 of 0.95, which is measured against a held-out split
-of its own Gaia/ZTF-derived training labels. SIMBAD coverage is 48% of the
-Pure Catalog and is biased toward bright, well-studied objects. Precision here
-is computed only over SIMBAD-typed objects, so it is not the catalog-wide
-precision. Some LPV/CV confusion may be astrophysically genuine (symbiotic and
-interacting systems are labeled inconsistently across surveys). The size and
-systematic direction of the LPV→`cv` and AGN→`sn` confusions are nonetheless
-large enough to warrant caution when using the rare-class VarWISE labels.
+## Related work
 
-## Results
-
-Full writeup in **[RESULTS.md](RESULTS.md)**; generated tables in
-`RESULTS_tables.md`. Headline:
-
-- **86% label saving.** Margin sampling matches random sampling's 914-label
-  score using 127 labels, and reaches 97.6% of full-supervised macro-F1 with
-  0.76% of the labels. Holds on both LightGBM (85.7%) and XGBoost (86.1%).
-- **The saving is concentrated in the rare classes.** At equal budget, active
-  learning gains +0.38 F1 on `cep` (0.92% prevalence) and +0.27 on `cv`
-  (0.14%), versus +0.01 on `ecl` (50%) and `lpv` (29%).
-- **Not merely rebalancing.** Against a random draw with identical per-class
-  counts, the gain survives at +0.294 (`cep`) and +0.160 (`cv`), with
-  Spearman ρ(prevalence, gain) = −0.857.
-- **Hard per-class quotas underperform random sampling**, reproducing the
-  same negative result found in the Chandra project.
-- **Distillation targets understate the benefit**: 72.4% saving against
-  VarWISE's own `vartype` versus 85.7% against independent SIMBAD labels,
-  because VarWISE over-predicts rare classes and so looks more balanced than
-  reality.
-- **Independent validation**: VarWISE scores macro-F1 0.632 against SIMBAD
-  labels it was not trained on, with `cv` precision 0.019 and `sn` 0.002.
-
-An earlier version of this analysis reported active learning *beating* full
-supervision. That was a LightGBM artifact and is corrected in
-[RESULTS.md §3](RESULTS.md).
+- **Paz et al. 2026**, VarWISE — the catalog under study
+  ([arXiv:2605.19059](https://arxiv.org/abs/2605.19059))
+- **Richards et al. 2011** — active learning for photometric variable stars;
+  direct methodological ancestor
+  ([arXiv:1106.2832](https://arxiv.org/abs/1106.2832))
+- **El-Kholy & Hayman 2026**, PASP 138(5) — margin sampling vs random querying
+  on a public astronomical catalog under extreme class imbalance; experimental
+  template ([arXiv:2602.23666](https://arxiv.org/abs/2602.23666))
+- **Liu et al. 2025**, RB-C1000, A&A 693 A105 — active + semi-supervised
+  learning for ZTF real/bogus; the shape of the target result
+  ([arXiv:2412.02409](https://arxiv.org/abs/2412.02409))
 
 ## Kill condition
 
 Pre-registered: if active learning yields less than ~15–20% label savings over
-random sampling, that is reported as a mixed/negative result rather than
-oversold. **Not triggered** — the saving is ~86%, and the rare-class effect it
-was meant to protect is the strongest part of the result.
+random sampling, report it as a mixed/negative result rather than overselling
+it. **Not triggered** — the saving is ~86%, and the rare-class effect it was
+meant to protect is the strongest part of the result.
