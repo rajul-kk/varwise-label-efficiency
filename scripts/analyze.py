@@ -1,4 +1,4 @@
-"""Turn raw label-efficiency curves into the study's headline numbers.
+﻿"""Turn raw label-efficiency curves into the study's headline numbers.
 
 Defines label savings as: the reduction in labels an active strategy needs,
 relative to random sampling, to first reach a target fraction of the
@@ -111,13 +111,16 @@ def savings_table(curves: pd.DataFrame, refs: pd.DataFrame, metric: str):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--track", choices=["a", "b"], default="b")
+    ap.add_argument("--tag", default="",
+                    help="suffix matching run_experiment --tag (e.g. _xgb)")
     args = ap.parse_args()
     track = args.track
+    suffix = f"{track}{args.tag}"
 
     rdir = ROOT / "results"
-    curves = pd.read_csv(rdir / f"curves_track_{track}.csv")
-    refs = pd.read_csv(rdir / f"reference_track_{track}.csv")
-    meta = json.loads((rdir / f"meta_track_{track}.json").read_text())
+    curves = pd.read_csv(rdir / f"curves_track_{suffix}.csv")
+    refs = pd.read_csv(rdir / f"reference_track_{suffix}.csv")
+    meta = json.loads((rdir / f"meta_track_{suffix}.json").read_text())
     classes = meta["classes"]
 
     # class prevalence, to correlate savings against rarity
@@ -140,7 +143,7 @@ def main():
         if col in curves.columns:
             all_tables.append(savings_table(curves, refs, col))
     tab = pd.concat(all_tables, ignore_index=True)
-    tab.to_csv(rdir / f"savings_track_{track}.csv", index=False)
+    tab.to_csv(rdir / f"savings_track_{suffix}.csv", index=False)
 
     # ---- headline: labels needed to match random's endpoint ----
     print("\n--- PRIMARY: labels needed to match random sampling's final score ---")
@@ -152,7 +155,7 @@ def main():
         if not t.empty:
             prim_all.append(t)
     prim = pd.concat(prim_all, ignore_index=True)
-    prim.to_csv(rdir / f"primary_savings_track_{track}.csv", index=False)
+    prim.to_csv(rdir / f"primary_savings_track_{suffix}.csv", index=False)
 
     for metric in ("macro_f1", "balanced_acc"):
         sub = prim[prim.metric == metric]
@@ -235,7 +238,7 @@ def main():
         print(line)
 
     pc = pd.DataFrame(per_class_rows)
-    pc.to_csv(rdir / f"per_class_savings_track_{track}.csv", index=False)
+    pc.to_csv(rdir / f"per_class_savings_track_{suffix}.csv", index=False)
 
     # ---- does savings correlate with rarity? ----
     print("\n--- Savings vs rarity (Spearman rho, negative = rarer classes save more) ---")

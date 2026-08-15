@@ -153,12 +153,34 @@ large enough to warrant caution when using the rare-class VarWISE labels.
 
 ## Results
 
-See `RESULTS.md` (generated after the experiment runs).
+Full writeup in **[RESULTS.md](RESULTS.md)**; generated tables in
+`RESULTS_tables.md`. Headline:
+
+- **86% label saving.** Margin sampling matches random sampling's 914-label
+  score using 127 labels, and reaches 97.6% of full-supervised macro-F1 with
+  0.76% of the labels. Holds on both LightGBM (85.7%) and XGBoost (86.1%).
+- **The saving is concentrated in the rare classes.** At equal budget, active
+  learning gains +0.38 F1 on `cep` (0.92% prevalence) and +0.27 on `cv`
+  (0.14%), versus +0.01 on `ecl` (50%) and `lpv` (29%).
+- **Not merely rebalancing.** Against a random draw with identical per-class
+  counts, the gain survives at +0.294 (`cep`) and +0.160 (`cv`), with
+  Spearman ρ(prevalence, gain) = −0.857.
+- **Hard per-class quotas underperform random sampling**, reproducing the
+  same negative result found in the Chandra project.
+- **Distillation targets understate the benefit**: 72.4% saving against
+  VarWISE's own `vartype` versus 85.7% against independent SIMBAD labels,
+  because VarWISE over-predicts rare classes and so looks more balanced than
+  reality.
+- **Independent validation**: VarWISE scores macro-F1 0.632 against SIMBAD
+  labels it was not trained on, with `cv` precision 0.019 and `sn` 0.002.
+
+An earlier version of this analysis reported active learning *beating* full
+supervision. That was a LightGBM artifact and is corrected in
+[RESULTS.md §3](RESULTS.md).
 
 ## Kill condition
 
 Pre-registered: if active learning yields less than ~15–20% label savings over
 random sampling, that is reported as a mixed/negative result rather than
-oversold. The secondary question stands on its own — even with modest
-aggregate savings, whether active learning meaningfully helps the *rare*
-classes is the finding that would matter.
+oversold. **Not triggered** — the saving is ~86%, and the rare-class effect it
+was meant to protect is the strongest part of the result.
