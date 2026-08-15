@@ -160,39 +160,115 @@ Simple margin sampling is the recommendation.
 
 ## 6. Independent validation of VarWISE against SIMBAD
 
-Scoring VarWISE's published `vartype` against 220,419 objects carrying an
-independent SIMBAD type (`scripts/validate_varwise.py`):
+> **Correction.** An earlier version of this section reported a single
+> macro-F1 of 0.632 against VarWISE's reported 0.95. **That comparison was
+> invalid** and has been withdrawn. Two different mechanisms produce the
+> `vartype` column, and mixing them conflates a well-performing classifier
+> with a poorly-performing heuristic. The corrected analysis is below.
+
+### Two mechanisms, not one
+
+`vartype` comes from two separate procedures, distinguishable in the data by
+whether `confidence` is populated:
+
+| predicted class | n scored | confidence null | mechanism |
+|---|---|---|---|
+| `agn`, `cep`, `ecl`, `lpv`, `rr`, `yso` | 205,464 | **0.0%** | XGBoost classifier |
+| `cv` | 11,576 | **95.2%** | rule-based transient assignment |
+| `sn` | 3,379 | **100%** | rule-based transient assignment |
+
+From the paper, verbatim:
+
+> *"Regarding the classification of variable objects as cataclysmic variables
+> (CV) or supernovae (SN), our approach is relatively simple. Given that WISE
+> observes very few stellar phenomena outside our own Local Group, if we can
+> identify a transient event with a known galaxy, we can sensibly assign it
+> the class of SN. Conversely, if we find that a transient event lies within
+> our Local Group, it is likely to be some sort of CV-related event."*
+
+Objects VARnet flags as transient are crossmatched against Gaia DR3
+galaxy/QSO catalogs within 2″; a match gives `sn`, no match gives `cv`. The
+reported macro-F1 of 0.95 describes the **XGBoost classifier only** and does
+not cover `cv`/`sn`.
+
+### (a) The XGBoost classifier holds up well
+
+Restricted to objects where both SIMBAD truth and VarWISE prediction are
+XGBoost classes (n = 205,374):
 
 | class | precision | recall | F1 | support |
 |---|---|---|---|---|
-| `ecl` | 0.995 | 0.984 | 0.989 | 111,241 |
-| `rr` | 0.934 | 0.963 | 0.948 | 12,106 |
-| `lpv` | 0.942 | 0.861 | 0.899 | 64,132 |
-| `cep` | 0.801 | 0.924 | 0.858 | 2,020 |
-| `agn` | 0.842 | 0.802 | 0.822 | 18,617 |
-| `yso` | 0.939 | 0.342 | 0.501 | 11,967 |
-| `cv` | 0.019 | 0.738 | 0.037 | 301 |
-| `sn` | 0.002 | 0.229 | 0.005 | 35 |
-| **macro avg** | 0.684 | 0.730 | **0.632** | 220,419 |
-| **weighted avg** | 0.957 | 0.896 | 0.918 | 220,419 |
+| `ecl` | 0.996 | 0.985 | **0.990** | 111,081 |
+| `lpv` | 0.942 | 0.989 | **0.965** | 55,794 |
+| `rr` | 0.934 | 0.963 | **0.948** | 12,095 |
+| `agn` | 0.844 | 0.995 | **0.913** | 15,017 |
+| `cep` | 0.803 | 0.935 | **0.864** | 1,996 |
+| `yso` | 0.940 | **0.436** | **0.595** | 9,391 |
+| **macro avg** | 0.910 | 0.884 | **0.879** | 205,374 |
 
-Dominant systematic confusions:
+**Macro-F1 0.879 against labels the classifier never saw**, versus 0.95 on
+its own Gaia/ZTF validation split. That is a reasonable and unsurprising
+degradation. Five of six classes score F1 ≥ 0.86.
 
-- **8,291 SIMBAD long-period variables classified `cv`** (the `cv` class is
-  ~98% contaminated on this subset)
-- **3,275 SIMBAD AGN classified `sn`**
-- **YSOs scatter** into `agn` (19.7%), `cv` (21.2%), `lpv` (23.8%); only 34.2%
-  recovered
+**The classifier's one real weakness is YSO recall: 0.436.** Precision is
+high (0.940), so when it says YSO it is usually right — it simply misses most
+of them.
 
-**Caveats.** This is not like-for-like with the paper's reported macro-F1 of
-0.95, which is measured against a held-out split of its own Gaia/ZTF-derived
-training labels. SIMBAD covers 48% of the Pure Catalog and is biased toward
-bright, well-studied objects; precision here is computed only over
-SIMBAD-typed objects and is not catalog-wide precision. Some LPV/CV confusion
-may be astrophysically genuine, since symbiotic and interacting systems are
-labeled inconsistently across surveys. The common classes hold up well. The
-size and consistent direction of the LPV→`cv` and AGN→`sn` confusions
-nonetheless warrant caution when using VarWISE's rare-class labels.
+Charging the classifier for objects the transient rule diverted away gives
+macro-F1 0.837.
+
+### (b) The rule-based transient assignment fails badly
+
+| class | SIMBAD n | VarWISE n | over-prediction | precision | recall |
+|---|---|---|---|---|---|
+| `cv` | 301 | 11,576 | **38.5×** | 0.019 | 0.738 |
+| `sn` | 35 | 3,379 | **96.5×** | 0.002 | 0.229 |
+
+The false positives are exactly what the rule's definition predicts:
+
+- **8,291 long-period variables → `cv`.** Bright Galactic Miras/AGB stars vary
+  slowly, get flagged transient, and are not extragalactic — so the rule
+  assigns CV.
+- **3,275 AGN → `sn`.** AGN are extragalactic and variable, so they match the
+  Gaia QSO/galaxy crossmatch and the rule assigns SN.
+
+This is not a taxonomy quibble. Photometrically the false positives are
+ordinary LPVs, not borderline CVs:
+
+| group | n | median period | median W1 amp | median W1 |
+|---|---|---|---|---|
+| true `cv`, predicted `cv` | 222 | 345 d | 0.439 | 14.14 |
+| true `lpv`, predicted `cv` | 8,291 | 346 d | 0.106 | **8.27** |
+
+The contaminants are ~6 magnitudes brighter and have ~4× lower amplitude than
+real CVs.
+
+### Caveats, which matter
+
+- **Selection bias is severe for the `cv` claim.** Only **37.3%** of `cv`
+  predictions carry a SIMBAD type, and those that do are **~3.8 mag brighter**
+  (median W1 8.80) than those that do not (12.59). Since real CVs are faint
+  and the contaminants are bright, the scored slice over-represents exactly
+  the contaminating population. **0.019 is not a catalog-wide precision.**
+- **Candidate labels soften the truth.** 15.4% of SIMBAD types carry
+  `_Candidate` status; excluding them raises `cv` precision to 0.031 and
+  reduces LPV→`cv` from 8,291 to 5,213. The effect persists but shrinks.
+- SIMBAD covers 50.2% of the Pure Catalog and is biased toward bright,
+  well-studied objects generally.
+- Some LPV/CV overlap may be astrophysically genuine — symbiotic and
+  interacting systems are labeled inconsistently across surveys.
+
+### What this actually supports
+
+A defensible claim: *VarWISE's XGBoost classifier validates reasonably against
+independent labels (macro-F1 0.879), with YSO recall the main shortfall. Its
+separate rule-based CV/SN transient assignment over-predicts by 38× and 96×
+respectively on the bright, SIMBAD-covered subset, in a direction its own
+definition predicts. Users should treat the `cv` and `sn` columns with
+caution and prefer the confidence-bearing classifier classes.*
+
+A claim this does **not** support: that VarWISE's classifier is unreliable, or
+that its reported 0.95 is contradicted.
 
 ---
 
@@ -203,11 +279,20 @@ validation** study, not a new-method paper.
 
 | # | Finding | Novelty class | Strength |
 |---|---|---|---|
-| 6 | VarWISE scores macro-F1 0.632 against independent SIMBAD labels | **New empirical finding about a specific published artifact.** No independent validation of VarWISE exists; the catalog is ~3 months old. | Strongest standalone result. Does not depend on active learning at all. |
-| 4 | Distillation targets understate AL benefit (72.4% vs 85.7%) | **New methodological caution.** Not something I could find stated elsewhere. | Conceptually the most interesting, but n=1 archive — suggestive, not established. |
+| 6b | VarWISE's rule-based CV/SN transient assignment over-predicts 38×/96×, driven by bright LPVs and AGN | **New empirical finding about a specific published artifact**, with the mechanism traced to the rule's own stated definition. No independent validation of VarWISE exists; the catalog is ~3 months old. | Strongest standalone result, but materially qualified by selection bias (37.3% coverage, contaminants over-represented). |
+| 6a | VarWISE's XGBoost classifier scores macro-F1 0.879 on independent labels; YSO recall 0.436 is the one weak spot | **Independent confirmation** of a published result, plus one specific localised weakness. | Solid and less exposed to selection bias (91–98% coverage for `ecl`/`rr`). |
+| 4 | Distillation targets understate AL benefit (72.4% vs 85.7%) | **Narrow new caution inside an established literature.** Label-bias propagation from catalog labels is already studied (e.g. galaxy-morphology de-biasing, [arXiv:2308.11007](https://arxiv.org/abs/2308.11007)); that it changes measured *label-efficiency* appears unstated. | Suggestive only — n=1 archive, and partly explained by the CV/SN rule inflating rare-class counts. |
 | 2 | Rare-class gain survives a composition-matched control (ρ = −0.857) | **Methodological refinement + new domain.** That AL helps under imbalance is known; separating *rebalancing* from *informativeness* with a count-matched control is rarely done. | Solid. The control is the part that adds rigour. |
 | 1 | 86% label saving | **Replication in a new archive.** RB-C1000 reports ~60%; El-Kholy & Hayman report comparable gains. | Confirmatory. Expected direction, larger magnitude. |
 | 5 | Hard per-class quotas underperform random | **Replication of a negative result** (same as `chandra-toolkit`). | Useful, low novelty. |
+
+Note that finding 6 was **split and partly retracted** on re-examination: the
+original single-number claim (macro-F1 0.632 vs 0.95) conflated two different
+mechanisms and overstated the problem. Estimating classifier F1 against
+incomplete ground truth is itself a known hazard — see *"Machine-learning
+classification of astronomical sources: estimating F1-score in the absence of
+ground truth"*, MNRAS Letters 517, L116 — which is precisely the trap the
+first version fell into.
 
 What this study is **not**: a new active-learning algorithm, a new acquisition
 function, or evidence that active learning works in general — that was

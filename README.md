@@ -14,7 +14,9 @@ confined to the *rare* variability classes.
 
 A second result fell out of building the ground truth and is reported in its
 own right: an **independent validation of VarWISE's published classifications**
-against SIMBAD, which finds severe precision failures in the rare classes.
+against SIMBAD. It finds the XGBoost classifier holds up well (macro-F1 0.879
+on labels it never saw), while the separate rule-based CV/SN transient
+assignment over-predicts by 38× and 96×.
 
 📊 **[Full results and figures → RESULTS.md](RESULTS.md)**
 🔢 **[Generated tables → RESULTS_tables.md](RESULTS_tables.md)**
@@ -70,26 +72,49 @@ Track B (independent SIMBAD labels), XGBoost — VarWISE's own booster family:
 ### Independent validation of VarWISE
 
 Scoring the published `vartype` against 220,419 objects carrying an
-independent SIMBAD type — labels the catalog was not trained on:
+independent SIMBAD type — labels the catalog was not trained on.
 
-| class | precision | recall | F1 | support |
+**Two mechanisms produce `vartype` and must be scored separately.** The six
+periodic/persistent classes come from the XGBoost classifier and carry a
+`confidence` value. `cv` and `sn` come from a rule — VARnet flags a transient,
+then a 2″ crossmatch against Gaia DR3 galaxy/QSO catalogs assigns SN on a
+match and CV otherwise — and carry **no confidence** (95.2% of `cv` and 100%
+of `sn` rows are confidence-null). The paper's reported macro-F1 of 0.95
+covers the classifier only.
+
+**(a) The classifier validates well** (n = 205,374):
+
+| class | precision | recall | F1 |
+|---|---|---|---|
+| `ecl` | 0.996 | 0.985 | **0.990** |
+| `lpv` | 0.942 | 0.989 | **0.965** |
+| `rr` | 0.934 | 0.963 | **0.948** |
+| `agn` | 0.844 | 0.995 | **0.913** |
+| `cep` | 0.803 | 0.935 | **0.864** |
+| `yso` | 0.940 | **0.436** | **0.595** |
+| **macro avg** | 0.910 | 0.884 | **0.879** |
+
+Macro-F1 **0.879** against labels it never saw, versus 0.95 on its own
+validation split — a reasonable degradation. **The one real weakness is YSO
+recall (0.436)**: when it says YSO it is usually right, but it misses most.
+
+**(b) The rule-based transient assignment fails badly:**
+
+| class | SIMBAD n | VarWISE n | over-prediction | precision |
 |---|---|---|---|---|
-| `ecl` | 0.995 | 0.984 | 0.989 | 111,241 |
-| `rr` | 0.934 | 0.963 | 0.948 | 12,106 |
-| `lpv` | 0.942 | 0.861 | 0.899 | 64,132 |
-| `cep` | 0.801 | 0.924 | 0.858 | 2,020 |
-| `agn` | 0.842 | 0.802 | 0.822 | 18,617 |
-| `yso` | 0.939 | 0.342 | 0.501 | 11,967 |
-| `cv` | **0.019** | 0.738 | 0.037 | 301 |
-| `sn` | **0.002** | 0.229 | 0.005 | 35 |
-| **macro avg** | 0.684 | 0.730 | **0.632** | 220,419 |
+| `cv` | 301 | 11,576 | **38.5×** | 0.019 |
+| `sn` | 35 | 3,379 | **96.5×** | 0.002 |
 
-The common classes hold up well. The rare classes fail on precision, driven by
-two systematic confusions: **8,291 SIMBAD long-period variables classified as
-`cv`**, and **3,275 SIMBAD AGN classified as `sn`**.
+Driven by **8,291 long-period variables assigned `cv`** and **3,275 AGN
+assigned `sn`** — exactly what the rule's definition predicts, since bright
+Miras look transient but aren't extragalactic, while AGN are. The `cv` false
+positives are ~6 mag brighter and 4× lower amplitude than real CVs, so they
+are ordinary LPVs rather than borderline cases.
 
-This is not like-for-like with the paper's reported macro-F1 of 0.95 — see
-[RESULTS.md §6](RESULTS.md) for the caveats, which matter.
+⚠️ **Selection bias materially qualifies the `cv` number.** Only 37.3% of `cv`
+predictions carry a SIMBAD type, and those that do are ~3.8 mag brighter than
+those that don't. Real CVs are faint; contaminants are bright. So 0.019 is
+**not** a catalog-wide precision. See [RESULTS.md §6](RESULTS.md).
 
 ---
 
@@ -191,14 +216,23 @@ seeded with 2 examples/class, 60 rounds × 15 queries (14 → ~914 labels).
 
 ## Honest accounting
 
-**A claim was retracted mid-study.** An earlier version reported active
-learning *beating* 120,000-label supervision (macro-F1 0.91 vs 0.77). That was
-a **LightGBM artifact** — at these hyperparameters LightGBM collapses on the
-rare classes under the natural distribution (`cv` F1 = 0.230 with all 120,000
-labels), while XGBoost reaches 0.935 on the same data. Caught by an estimator
-robustness check; corrected in [RESULTS.md §3](RESULTS.md). The
-label-efficiency and rare-class results are within-estimator comparisons and
-reproduce on both boosters, so they are unaffected.
+**Two claims were retracted during the study.**
+
+1. **"Active learning beats full supervision"** (macro-F1 0.91 vs 0.77) was a
+   **LightGBM artifact** — at these hyperparameters LightGBM collapses on the
+   rare classes under the natural distribution (`cv` F1 = 0.230 with all
+   120,000 labels), while XGBoost reaches 0.935 on the same data. Caught by an
+   estimator robustness check; corrected in [RESULTS.md §3](RESULTS.md). The
+   label-efficiency and rare-class results are within-estimator comparisons
+   and reproduce on both boosters, so they are unaffected.
+
+2. **"VarWISE scores macro-F1 0.632 against SIMBAD, versus its reported
+   0.95"** conflated two different mechanisms — an XGBoost classifier and a
+   separate rule-based transient assignment — and **overstated the problem**.
+   Caught by checking why 38,015 catalog rows have a null `confidence`. The
+   corrected, mechanism-split analysis is in
+   [RESULTS.md §6](RESULTS.md): the classifier scores 0.879, and the failure
+   is localised to the CV/SN rule.
 
 **Prior art.** Richards et al. 2011
 ([arXiv:1106.2832](https://arxiv.org/abs/1106.2832)) already applied active

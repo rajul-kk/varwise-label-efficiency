@@ -1,0 +1,82 @@
+﻿==========================================================================
+T1 - SELECTION BIAS: is the scored subset representative?
+==========================================================================
+
+Pure Catalog: 457,080 objects; 229,365 (50.2%) have a SIMBAD type
+Mapped to the 8-class taxonomy: 220,471 (48.2% of catalog)
+
+  VarWISE class   predicted  w/ SIMBAD  coverage   mapped  map cov
+  agn                85,467     17,814    20.8%   17,731    20.7%
+  cep                 3,217      2,549    79.2%    2,330    72.4%
+  cv                 34,316     12,802    37.3%   11,576    33.7%
+  ecl               119,713    111,943    93.5%  109,934    91.8%
+  lpv               179,051     63,529    35.5%   58,627    32.7%
+  rr                 12,752     12,548    98.4%   12,483    97.9%
+  sn                  9,596      3,387    35.3%    3,379    35.2%
+  unclear               317         55    17.4%       52    16.4%
+  yso                12,651      4,738    37.5%    4,359    34.5%
+
+  Brightness check (W1 magnitude, fainter = larger):
+  group                                n   median W1  median n_obs
+  all Pure Catalog               457,080       12.58           270
+  has SIMBAD type                229,365       12.31           284
+  no SIMBAD type                 227,715       12.75           256
+  VarWISE cv, has SIMBAD          12,802        8.80           259
+  VarWISE cv, no SIMBAD           21,514       12.59           274
+
+  => Interpretation: if 'has SIMBAD' is much brighter than 'no SIMBAD',
+     the audit measures precision on the bright, well-studied slice only.
+
+==========================================================================
+T2 - CANDIDATE LABELS: is the truth itself soft?
+==========================================================================
+
+  scored objects: 220,419; 33,897 (15.4%) are _Candidate types
+
+  all SIMBAD types (n=220,419):
+    cv precision = 0.0192   sn precision = 0.0024
+    LPV->cv = 8,291   AGN->sn = 3,275
+
+  confirmed types only (n=186,522):
+    cv precision = 0.0309   sn precision = 0.0022
+    LPV->cv = 5,213   AGN->sn = 3,124
+
+==========================================================================
+T3 - CONFIDENCE: does filtering on VarWISE confidence rescue precision?
+==========================================================================
+
+    conf >=   n scored   cv prec   sn prec   yso rec  macro F1
+       0.00    206,020    0.1439    0.0000    0.4191    0.6851
+       0.50    205,750    0.1418    0.0000    0.4209    0.6856
+       0.80    202,265    0.1384    0.0000    0.4327    0.6901
+       0.90    193,612    0.1330    0.0000    0.4594    0.6992
+       0.95    184,626    0.1343    0.0000    0.4784    0.7076
+       0.99    160,996    0.0927    0.0000    0.4969    0.7104
+
+==========================================================================
+T4 - TAXONOMY: are the LPV->cv objects photometrically like real cv?
+==========================================================================
+
+  group                        n   med period1   med W1amp   med W1-W2   med W1
+  true cv, pred cv           222        345.00       0.439       0.138    14.14
+  true lpv, pred cv        8,291        346.00       0.106       0.082     8.27
+  true lpv, pred lpv      55,200        463.00       0.109       0.043     8.65
+
+  => If 'true lpv, pred cv' looks like 'true lpv, pred lpv' rather than
+     like real cv, the predictions are wrong rather than the taxonomy.
+
+==========================================================================
+T5 - DIRECTION: over-prediction vs two-way confusion
+==========================================================================
+
+  class   SIMBAD n  VarWISE pred n  over-pred x  precision   recall
+  agn       18,617          17,731          1.0     0.8423   0.8022
+  cep        2,020           2,330          1.2     0.8009   0.9238
+  cv           301          11,576         38.5     0.0192   0.7375
+  ecl      111,241         109,934          1.0     0.9953   0.9836
+  lpv       64,132          58,627          0.9     0.9415   0.8607
+  rr        12,106          12,483          1.0     0.9335   0.9626
+  sn            35           3,379         96.5     0.0024   0.2286
+  yso       11,967           4,359          0.4     0.9385   0.3419
+
+(Full numbers above; see audit_robustness.txt in results/ for the saved copy.)

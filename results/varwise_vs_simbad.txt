@@ -1,17 +1,84 @@
-VarWISE vartype scored against independent SIMBAD types
-n = 220419
+Scored 220,419 Pure Catalog objects with an independent SIMBAD type
+
+Confidence-null rate by predicted class (confirms the two mechanisms):
+  class           n  conf null   null %
+  agn        17,731          0     0.0%
+  cep         2,330          0     0.0%
+  cv         11,576     11,020    95.2%
+  ecl       109,934          0     0.0%
+  lpv        58,627          0     0.0%
+  rr         12,483          0     0.0%
+  sn          3,379      3,379   100.0%
+  yso         4,359          0     0.0%
+
+======================================================================
+(a) XGBOOST CLASSES - the like-for-like comparison to the reported 0.95
+======================================================================
+
+Restricted to objects whose SIMBAD truth AND VarWISE prediction are both
+XGBoost classes: n = 205,374
 
               precision    recall  f1-score   support
 
-         agn      0.842     0.802     0.822     18617
-         cep      0.801     0.924     0.858      2020
-          cv      0.019     0.738     0.037       301
-         ecl      0.995     0.984     0.989    111241
-         lpv      0.942     0.861     0.899     64132
-          rr      0.934     0.963     0.948     12106
-          sn      0.002     0.229     0.005        35
-         yso      0.939     0.342     0.501     11967
+         agn      0.844     0.995     0.913     15017
+         cep      0.803     0.935     0.864      1996
+         ecl      0.996     0.985     0.990    111081
+         lpv      0.942     0.989     0.965     55794
+          rr      0.934     0.963     0.948     12095
+         yso      0.940     0.436     0.595      9391
 
-    accuracy                          0.896    220419
-   macro avg      0.684     0.730     0.632    220419
-weighted avg      0.957     0.896     0.918    220419
+    accuracy                          0.960    205374
+   macro avg      0.910     0.884     0.879    205374
+weighted avg      0.962     0.960     0.956    205374
+
+Macro F1 over the six XGBoost classes: 0.879
+VarWISE reports 0.95 on its own Gaia/ZTF validation split (different label source, see caveats).
+
+If rule-class predictions are retained as errors (n = 220,083): macro F1 = 0.837
+The drop is caused by the rule-based transient assignment stealing objects from
+the XGBoost classes, not by the classifier itself.
+
+======================================================================
+(b) RULE-ASSIGNED TRANSIENT CLASSES (cv, sn) - NOT the XGBoost classifier
+======================================================================
+
+  class  SIMBAD n  VarWISE n  over-pred  precision   recall
+  cv          301     11,576      38.5x     0.0192   0.7375
+  sn           35      3,379      96.5x     0.0024   0.2286
+
+Where the rule's false positives come from:
+  predicted cv: lpv=8,291, yso=2,536, agn=325, cv=222, ecl=156
+  predicted sn: agn=3,275, lpv=47, yso=40, sn=8, ecl=4
+
+The rule's failure mode is exactly what its definition predicts:
+  - Bright Galactic Miras/AGB stars vary slowly and get flagged transient;
+    they are not extragalactic, so the rule assigns CV -> 8,291 LPVs.
+  - AGN are extragalactic and variable, so they match the Gaia QSO/galaxy
+    crossmatch and the rule assigns SN -> 3,275 AGN.
+
+  Photometric check (median values):
+    group                        n   period1   W1 amp      W1
+    true cv, pred cv           222       345    0.439   14.14
+    true lpv, pred cv        8,291       346    0.106    8.27
+  The false positives are ~6 mag brighter and 4x lower amplitude than
+  real CVs - ordinary bright LPVs, not borderline CVs.
+
+======================================================================
+SELECTION BIAS - how representative is the scored subset?
+======================================================================
+
+  class    predicted   scored  coverage  med W1 scored  med W1 unscored
+  agn         85,467   17,814    20.8%          13.73            14.20
+  cep          3,217    2,549    79.2%          10.91            10.51
+  cv          34,316   12,802    37.3%           8.80            12.59
+  ecl        119,713  111,943    93.5%          13.00            12.65
+  lpv        179,051   63,529    35.5%           8.79            12.13
+  rr          12,752   12,548    98.4%          13.39            13.27
+  sn           9,596    3,387    35.3%          13.71            14.08
+  yso         12,651    4,738    37.5%          11.83            12.61
+
+  SIMBAD-typed cv predictions are ~3.8 mag BRIGHTER than untyped ones,
+  and real CVs are faint (median W1 14.1) while the contaminants are
+  bright (8.3). The scored slice therefore over-represents exactly the
+  contaminating population, so 0.019 is a LOWER BOUND on the bright end,
+  not a catalog-wide precision. Only 37.3% of cv predictions are scored.

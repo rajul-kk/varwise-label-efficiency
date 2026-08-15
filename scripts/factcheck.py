@@ -163,34 +163,87 @@ def main():
     print("SECTION 6 - VarWISE vs SIMBAD validation")
     print("=" * 72)
     sys.path.insert(0, str(ROOT))
-    from sklearn.metrics import classification_report, precision_score
+    from sklearn.metrics import classification_report, f1_score
     from scripts.build_dataset import SIMBAD_MAP
+
+    XGB_CLASSES = ["agn", "cep", "ecl", "lpv", "rr", "yso"]
 
     df = pd.read_parquet(ROOT / "data" / "raw" / "varwise_pure.parquet")
     df["vartype"] = df["vartype"].astype("string").str.strip()
     df["simbad_type"] = df["simbad_type"].astype("string").str.strip()
     truth = df["simbad_type"].map(SIMBAD_MAP)
     msk = truth.notna() & df["vartype"].notna() & (df["vartype"] != "unclear")
-    y_true = truth[msk].values
-    y_pred = df.loc[msk, "vartype"].replace({"ea": "ecl", "ew": "ecl"}).values
-    labels = sorted(set(y_true))
-    rep = classification_report(y_true, y_pred, labels=labels, zero_division=0,
-                                output_dict=True)
+    sub = df[msk].copy()
+    sub["truth"] = truth[msk]
+    sub["pred"] = sub["vartype"].replace({"ea": "ecl", "ew": "ecl"})
     check("n scored", int(msk.sum()), 220419, tol=0, fmt="{}")
-    check("macro avg F1", rep["macro avg"]["f1-score"], 0.632)
-    check("weighted avg F1", rep["weighted avg"]["f1-score"], 0.918)
-    check("cv precision", rep["cv"]["precision"], 0.019, tol=0.002)
-    check("sn precision", rep["sn"]["precision"], 0.002, tol=0.002)
-    check("yso recall", rep["yso"]["recall"], 0.342, tol=0.003)
-    check("ecl F1", rep["ecl"]["f1-score"], 0.989)
-    conf = pd.DataFrame({"truth": y_true, "pred": y_pred})
-    check("LPV misclassified as cv",
-          int(((conf.truth == "lpv") & (conf.pred == "cv")).sum()), 8291, tol=0, fmt="{}")
-    check("AGN misclassified as sn",
-          int(((conf.truth == "agn") & (conf.pred == "sn")).sum()), 3275, tol=0, fmt="{}")
-    yso = conf[conf.truth == "yso"]
-    for tgt, claimed in [("agn", 19.7), ("cv", 21.2), ("lpv", 23.8)]:
-        check(f"yso -> {tgt} %", 100 * (yso.pred == tgt).mean(), claimed, tol=0.15, fmt="{:.1f}")
+
+    # The two mechanisms: XGBoost classes carry a confidence, cv/sn do not.
+    print("\n  mechanism separation (cv/sn are rule-assigned, not XGBoost):")
+    check("cv confidence-null rate",
+          sub[sub.pred == "cv"].confidence.isna().mean(), 0.952, tol=0.002)
+    check("sn confidence-null rate",
+          sub[sub.pred == "sn"].confidence.isna().mean(), 1.000, tol=0.001)
+    for c in XGB_CLASSES:
+        check(f"{c} confidence-null rate",
+              sub[sub.pred == c].confidence.isna().mean(), 0.0, tol=0.001)
+
+    # (a) XGBoost classes - the like-for-like comparison
+    print("\n  (a) XGBoost classes:")
+    x = sub[sub.truth.isin(XGB_CLASSES) & sub.pred.isin(XGB_CLASSES)]
+    check("n (both sides XGBoost classes)", len(x), 205374, tol=0, fmt="{}")
+    rep = classification_report(x.truth, x.pred, labels=XGB_CLASSES,
+                                zero_division=0, output_dict=True)
+    check("macro F1 (six XGBoost classes)", rep["macro avg"]["f1-score"], 0.879)
+    check("ecl F1", rep["ecl"]["f1-score"], 0.990)
+    check("lpv F1", rep["lpv"]["f1-score"], 0.965)
+    check("rr F1", rep["rr"]["f1-score"], 0.948)
+    check("agn F1", rep["agn"]["f1-score"], 0.913)
+    check("cep F1", rep["cep"]["f1-score"], 0.864)
+    check("yso F1", rep["yso"]["f1-score"], 0.595)
+    check("yso recall (the classifier's one weak spot)",
+          rep["yso"]["recall"], 0.436, tol=0.003)
+    x2 = sub[sub.truth.isin(XGB_CLASSES)]
+    check("macro F1 charging rule-stolen objects",
+          f1_score(x2.truth, x2.pred, labels=XGB_CLASSES, average="macro",
+                   zero_division=0), 0.837)
+
+    # (b) rule-assigned transient classes
+    print("\n  (b) rule-assigned cv/sn:")
+    for c, n_t, n_p, over, prec, rec in [
+            ("cv", 301, 11576, 38.5, 0.0192, 0.7375),
+            ("sn", 35, 3379, 96.5, 0.0024, 0.2286)]:
+        nt = int((sub.truth == c).sum())
+        npd = int((sub.pred == c).sum())
+        tp = int(((sub.truth == c) & (sub.pred == c)).sum())
+        check(f"{c} SIMBAD count", nt, n_t, tol=0, fmt="{}")
+        check(f"{c} VarWISE predicted count", npd, n_p, tol=0, fmt="{}")
+        check(f"{c} over-prediction factor", npd / nt, over, tol=0.1, fmt="{:.1f}")
+        check(f"{c} precision", tp / npd, prec, tol=0.0005, fmt="{:.4f}")
+        check(f"{c} recall", tp / nt, rec, tol=0.001, fmt="{:.4f}")
+
+    check("LPV assigned cv by the rule",
+          int(((sub.truth == "lpv") & (sub.pred == "cv")).sum()), 8291, tol=0, fmt="{}")
+    check("AGN assigned sn by the rule",
+          int(((sub.truth == "agn") & (sub.pred == "sn")).sum()), 3275, tol=0, fmt="{}")
+
+    # photometric evidence the cv false positives are ordinary LPVs
+    lpvcv = sub[(sub.truth == "lpv") & (sub.pred == "cv")]
+    realcv = sub[(sub.truth == "cv") & (sub.pred == "cv")]
+    check("real cv median W1", realcv.w1mag.median(), 14.14, tol=0.02)
+    check("LPV->cv median W1", lpvcv.w1mag.median(), 8.27, tol=0.02)
+    check("real cv median W1 amplitude", realcv.w1_amp.median(), 0.439, tol=0.002)
+    check("LPV->cv median W1 amplitude", lpvcv.w1_amp.median(), 0.106, tol=0.002)
+
+    # selection bias
+    print("\n  selection bias on the cv claim:")
+    has_s = df["simbad_type"].notna() & (df["simbad_type"] != "")
+    pred_all = df["vartype"].replace({"ea": "ecl", "ew": "ecl"})
+    mcv = pred_all == "cv"
+    check("cv predictions in catalog", int(mcv.sum()), 34316, tol=0, fmt="{}")
+    check("cv SIMBAD coverage", (mcv & has_s).sum() / mcv.sum(), 0.373, tol=0.003)
+    check("cv scored median W1", df.loc[mcv & has_s, "w1mag"].median(), 8.80, tol=0.02)
+    check("cv unscored median W1", df.loc[mcv & ~has_s, "w1mag"].median(), 12.59, tol=0.02)
 
     print("\n" + "=" * 72)
     print("SECTION 7 - dataset facts")
