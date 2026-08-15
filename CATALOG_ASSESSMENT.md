@@ -155,15 +155,76 @@ alone matches the version that includes it (0.9654 vs 0.9655) — mid-IR colour
 and amplitude separate these populations without needing the crossmatch the
 rule is built on.
 
+### Applied to the full catalog
+
+`scripts/apply_transient_fix.py` trains on all 17,513 labelled rule-assigned
+objects and applies the model to **all 79,293** rule-assigned transients
+across both tiers (Pure: 43,912; Extended-only: 35,381), producing
+`results/varwise_transient_corrections.csv` keyed on `cluster_id`.
+
+**The generalization check passes on accuracy.** Every finding in this repo
+rests on the bright, SIMBAD-covered subset, so accuracy was measured in W1
+magnitude bins:
+
+| W1 range | n | accuracy | macro F1 |
+|---|---|---|---|
+| 0–8 | 2,809 | 0.995 | 0.405 |
+| 8–10 | 6,384 | 0.983 | 0.520 |
+| 10–12 | 2,516 | 0.907 | ~0.58 |
+| 12–14 | 3,581 | 0.934 | 0.592 |
+| 14–30 | 2,223 | 0.949 | 0.627 |
+
+Accuracy does **not** collapse toward the faint end (0.949 at W1 > 14), so
+extrapolation is defensible. The labelled set spans W1 = 7.5–15.9; 22.3% of
+unlabelled objects lie beyond the labelled 95th percentile.
+
+**But macro F1 is low in every bin, and that is the honest measure.**
+Aggregate accuracy is carried by the majority classes. Per-class
+cross-validated F1:
+
+| class | train n | CV F1 | verdict |
+|---|---|---|---|
+| `agn` | 3,945 | 0.981 | reliable |
+| `lpv` | 9,626 | 0.978 | reliable |
+| `yso` | 3,181 | 0.932 | reliable |
+| `cv` | 343 | 0.915 | reliable |
+| `ecl` | 344 | **0.598** | **unreliable** |
+| `sn` | 36 | **0.316** | **unreliable** |
+| `cep` | 38 | **0.049** | **unreliable** |
+
+The table therefore ships a `reliability` column:
+
+| tier | n | share |
+|---|---|---|
+| validated (independent label exists) | 17,539 | 22.1% |
+| high (class F1 ≥ 0.85, prob ≥ 0.9) | 31,344 | 39.5% |
+| medium | 2,708 | 3.4% |
+| **low — do not use** | **27,702** | **34.9%** |
+
+**The `ecl` result is a hypothesis, not a correction.** The model assigns
+`ecl` to 21,646 objects — the largest single corrected class — but 21,289 of
+those are flagged low reliability, because `ecl` was trained on only 344
+examples and scores CV F1 0.598. Those objects may well be eclipsing binaries
+the rule swept into `cv`, but this analysis cannot establish that. It is the
+clearest target for follow-up.
+
+Usable output: **61.6%** of rows (validated + high), covering the `lpv`,
+`agn`, `yso` and `cv` corrections that constitute the bulk of the rule's
+failures.
+
 ### Caveats
 
 - The rule was never designed to emit `lpv`/`agn`/`yso`, so it cannot win on
   those. The useful reading is *"this population is recoverable"*, not
   *"the rule is bad at its own job"*.
-- Only 226 genuine CVs and 20 SNe survive here, so those columns rest on
-  small numbers; `sn` had too few to model and was dropped.
-- Evaluated only on rule-assigned objects with a SIMBAD type (37.3% of `cv`),
-  which are systematically brighter.
+- Only 343 genuine CVs and 36 SNe exist in the labelled population, so those
+  columns rest on small numbers.
+- Only 22.1% of rule-assigned objects carry a SIMBAD type, and those are
+  systematically brighter (median W1 9.64 vs 13.63 for the rest).
+- Predicted-class colour loci sit systematically bluer than the labelled
+  reference loci (e.g. predicted `agn` W1−W2 0.730 vs labelled 0.959). This
+  may reflect genuine differences in the faint population, or mild
+  distribution drift; it is unresolved.
 
 ---
 

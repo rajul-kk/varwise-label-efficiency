@@ -1,0 +1,133 @@
+====================================================================================
+CORRECTED LABELS FOR VarWISE RULE-ASSIGNED TRANSIENTS
+====================================================================================
+
+Rule-assigned objects to correct:
+  pure       cv= 34,316  sn=  9,596  total= 43,912
+  extended   cv= 35,102  sn=    279  total= 35,381
+  TOTAL                            79,293
+
+With an independent SIMBAD label: 17,513 (22.1%)   classes: ['agn', 'cep', 'cv', 'ecl', 'lpv', 'sn', 'yso']
+
+====================================================================================
+GENERALIZATION CHECK - accuracy vs brightness
+====================================================================================
+
+  labelled objects span W1 = 7.5 to 15.9
+
+  W1 range               n   accuracy   macro F1   dominant truth
+  0-8                2,809     0.9947     0.4048              lpv
+  8-10               6,384     0.9831     0.5197              lpv
+  10-11              1,082     0.9104     0.6253              yso
+  11-12              1,434     0.9045     0.5350              yso
+  12-13              1,722     0.9355     0.6095              yso
+  13-14              1,859     0.9333     0.5757              agn
+  14-30              2,223     0.9492     0.6274              agn
+
+  labelled   median W1 = 9.64
+  unlabelled median W1 = 13.63  (n = 61,754)
+  unlabelled objects fainter than the labelled 95th percentile: 22.3%
+
+====================================================================================
+APPLYING THE MODEL
+====================================================================================
+
+  Per-class cross-validated reliability of the model itself:
+  class      train n    CV F1     verdict
+  agn          3,945    0.981    reliable
+  cep             38    0.049  UNRELIABLE
+  cv             343    0.915    reliable
+  ecl            344    0.598  UNRELIABLE
+  lpv          9,626    0.978    reliable
+  sn              36    0.316  UNRELIABLE
+  yso          3,181    0.932    reliable
+
+  Corrected-class distribution (79,293 objects):
+  corrected         n    share  median prob  median W1
+  ecl          21,646   27.3%        0.991      13.38
+  agn          21,361   26.9%        1.000      14.48
+  lpv          16,209   20.4%        1.000       8.74
+  yso          14,256   18.0%        0.996      11.92
+  cv            4,948    6.2%        0.989      14.66
+  sn              737    0.9%        0.914      15.47
+  cep             136    0.2%        0.905      13.08
+
+  Original VarWISE assignment vs corrected class:
+                   agn       cep        cv       ecl       lpv        sn       yso
+  cv            11,677       136     4,941    21,639    16,148       726    14,151
+  sn             9,684         0         7         7        61        11       105
+
+====================================================================================
+SANITY OF THE EXTRAPOLATED (UNVALIDATED) PREDICTIONS
+====================================================================================
+
+  group                             n  med prob   lpv %   agn %   yso %   cv %
+  validated (has SIMBAD)       17,539     1.000   54.9%   22.5%   18.2%   2.0%
+  extrapolated                 61,754     0.996   10.6%   28.2%   17.9%   7.5%
+
+  Photometric coherence: do predicted classes occupy the right colours?
+  predicted         n   med W1-W2   med W1  med W1amp
+  agn          21,361       0.730    14.48      0.303
+  cep             136      -0.011    13.08      0.171
+  cv            4,948      -0.068    14.66      0.346
+  ecl          21,646      -0.029    13.38      0.180
+  lpv          16,209       0.060     8.74      0.108
+  sn              737       0.097    15.47      0.380
+  yso          14,256       0.429    11.92      0.191
+
+  Reference loci from the labelled set (SIMBAD truth):
+  agn           3,945       0.959    13.85      0.287
+  cep              38       0.083    11.45      0.193
+  cv              343       0.122    14.58      0.426
+  ecl             344       0.038    13.01      0.174
+  lpv           9,626       0.068     8.32      0.100
+  sn               36       0.376    14.56      0.363
+  yso           3,181       0.569    11.61      0.199
+
+====================================================================================
+RELIABILITY BREAKDOWN
+====================================================================================
+
+  tier                n    share  meaning
+  validated      17,539   22.1%  independent SIMBAD label agrees or exists
+  high           31,344   39.5%  class CV F1 >= 0.85 and prob >= 0.9
+  medium          2,708    3.4%  class CV F1 >= 0.60 and prob >= 0.8
+  low            27,702   34.9%  weak class model or low probability - do not use
+
+  Reliability by corrected class:
+  class      validated        high      medium         low
+  agn            3,946      16,186         455         774
+  cep               38           0           0          98
+  cv               343       3,220         414         971
+  ecl              357           0           0      21,289
+  lpv            9,634       4,196         740       1,639
+  sn                36           0           0         701
+  yso            3,185       7,742       1,099       2,230
+
+====================================================================================
+HOW TO USE THIS TABLE - AND WHAT NOT TO USE IT FOR
+====================================================================================
+
+  varwise_transient_corrections.csv is keyed on cluster_id and carries:
+    corrected_class     predicted true class
+    corrected_prob      model probability for that class
+    class_cv_f1         cross-validated F1 for that class (model quality)
+    validated           True if an independent SIMBAD label existed
+    reliability         validated / high / medium / low
+    p_<class>           full probability vector
+
+  USE the validated and high tiers. They cover the lpv / agn / yso
+  corrections, which are the bulk of the rule's failures and are supported
+  by thousands of labelled examples each.
+
+  DO NOT use the low tier for population statistics. Two specific warnings:
+
+    - `ecl` is predicted for a large share of the extrapolated population but
+      was trained on only a few hundred examples and scores poorly in
+      cross-validation. Those predictions are hypotheses, not corrections.
+    - `sn` and `cep` have too few labelled examples in this population to
+      support any per-object claim.
+
+  Aggregate accuracy (0.966) is carried by the majority classes. Macro F1 is
+  far lower (0.40-0.63 depending on magnitude bin), and that gap is the
+  honest measure of how unevenly this model performs across classes.
