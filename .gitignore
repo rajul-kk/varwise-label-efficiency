@@ -2,6 +2,12 @@
 data/raw/
 data/*.parquet
 
+# Run logs
+results/_*.log
+results/_*.err
+results/*_smoke*
+results/*_xgbsmoke*
+
 # Python
 __pycache__/
 *.py[cod]
