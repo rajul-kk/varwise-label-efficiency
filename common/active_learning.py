@@ -181,13 +181,22 @@ def prototype_distance_score(estimator, X_labeled, y_labeled, X_pool, pool_indic
         return base_scores
 
     # z-score using combined labeled+pool statistics so distance isn't
-    # dominated by whichever raw feature happens to have the largest scale
+    # dominated by whichever raw feature happens to have the largest scale.
+    #
+    # NaN-safe: unlike the tree estimators these strategies usually wrap,
+    # cdist has no missing-value handling - a single NaN feature would
+    # poison mu/sigma and return an all-NaN score vector, silently reducing
+    # this strategy to an arbitrary ordering. Astronomical catalogs are
+    # full of missing photometry (VarWISE: ~13% of rows lack 2MASS JHK,
+    # ~16% lack a usable parallax), so centre on nan-statistics and treat a
+    # missing feature as "at the population mean" (z = 0) instead.
     combined = np.vstack([X_labeled, X_pool])
-    mu = combined.mean(axis=0)
-    sigma = combined.std(axis=0)
-    sigma[sigma == 0] = 1.0
-    X_rare_z = (X_rare - mu) / sigma
-    X_pool_z = (X_pool - mu) / sigma
+    mu = np.nanmean(combined, axis=0)
+    sigma = np.nanstd(combined, axis=0)
+    mu = np.where(np.isfinite(mu), mu, 0.0)
+    sigma = np.where(np.isfinite(sigma) & (sigma > 0), sigma, 1.0)
+    X_rare_z = np.nan_to_num((X_rare - mu) / sigma, nan=0.0, posinf=0.0, neginf=0.0)
+    X_pool_z = np.nan_to_num((X_pool - mu) / sigma, nan=0.0, posinf=0.0, neginf=0.0)
 
     k = min(k_neighbors, len(X_rare_z))
     dists = cdist(X_pool_z, X_rare_z)
