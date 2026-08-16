@@ -402,6 +402,56 @@ def main():
           tol=0.003)
     check("VarWISE YSO precision", rep["yso"]["precision"], 0.940, tol=0.003)
 
+    # =================================================================
+    print("\n" + "=" * 72)
+    print("SECTION 12 - synthetic majorization test (THEORY_NOTE.md)")
+    print("=" * 72)
+    syn = ROOT / "results" / "synthetic_majorization_curves.csv"
+    if syn.exists():
+        curves = pd.read_csv(syn)
+        mean_curve = (curves.groupby(["t", "strategy", "n_labels"])
+                      .mean(numeric_only=True).reset_index())
+        PI_0 = np.array([0.50, 0.25, 0.10, 0.08, 0.05, 0.02])
+        K = len(PI_0)
+
+        def pi_of_t(t):
+            u = np.full(K, 1.0 / K)
+            p = (1 - t) * PI_0 + t * u
+            return p / p.sum()
+
+        # raw mechanism table -- at the 300-label checkpoint (THEORY_NOTE.md
+        # SS3a), not the curve endpoint
+        rare_f1 = {}
+        for t in sorted(curves.t.unique()):
+            p = pi_of_t(t)
+            rc = int(np.argmin(p))
+            rnd = mean_curve[(mean_curve.t == t) & (mean_curve.strategy == "random")]
+            rnd = rnd.sort_values("n_labels")
+            idx = (rnd.n_labels - 300).abs().idxmin()
+            rare_f1[round(p.min(), 4)] = float(rnd.loc[idx, f"f1_{rc}"])
+
+        check("t=0.0 pi_min", pi_of_t(0.0).min(), 0.0200, tol=0.0005)
+        check("t=1.0 pi_min", pi_of_t(1.0).min(), 0.1667, tol=0.0005)
+        expected_rare_f1 = {0.02: 0.399, 0.0493: 0.504, 0.0787: 0.602,
+                           0.108: 0.692, 0.1373: 0.719, 0.1667: 0.818}
+        for k, v in expected_rare_f1.items():
+            match = min(rare_f1.keys(), key=lambda x: abs(x - k))
+            check(f"random rarest-F1 at pi_min~{k}", rare_f1[match], v, tol=0.005)
+
+        vals = list(rare_f1.items())
+        vals.sort()
+        mono = all(vals[i][1] <= vals[i+1][1] + 0.001 for i in range(len(vals)-1))
+        check("rare-class F1 monotonic in pi_min", float(mono), 1.0, tol=0, fmt="{:.0f}")
+    else:
+        print("  (synthetic curves absent - run synthetic_majorization_test.py)")
+
+    rare_report = ROOT / "results" / "synthetic_rare_class_report.txt"
+    if rare_report.exists():
+        txt = rare_report.read_text(encoding="utf-8")
+        check("rare-class-specific rho present",
+              "rho(pi_min, rare-class-specific savings) = -0.314" in txt,
+              True, tol=0, fmt="{}")
+
     print("\n" + "=" * 72)
     print(f"{CHECKS} checks run, {len(FAILURES)} failure(s)")
     print("=" * 72)

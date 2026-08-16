@@ -67,7 +67,11 @@ Track B (independent SIMBAD labels), XGBoost — VarWISE's own booster family:
   a negative result reproducing the same observation from the Chandra project.
 - **Distillation targets understate the benefit**: 72.4% saving against
   VarWISE's own predictions versus 85.7% against real labels, because VarWISE
-  over-predicts rare classes and so looks more balanced than reality.
+  over-predicts rare classes and so looks more balanced than reality. This can
+  be formalized (majorization/Schur-convexity of the random-sampling
+  requirement) and holds up cleanly on the core mechanism in controlled
+  synthetic tests, though the specific quantitative prediction is only weakly
+  supported at 3 seeds — see **[THEORY_NOTE.md](THEORY_NOTE.md)**.
 
 ### Independent validation of VarWISE
 

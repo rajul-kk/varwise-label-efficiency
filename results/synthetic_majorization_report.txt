@@ -1,0 +1,71 @@
+========================================================================================
+SYNTHETIC MAJORIZATION TEST
+========================================================================================
+
+Base distribution pi_0 = [0.5, 0.25, 0.1, 0.08, 0.05, 0.02]  (rarest class = class 5, prevalence 2.00%)
+Sweeping pi(t) = (1-t)*pi_0 + t*uniform for t in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+t=0 is the most unequal (= pi_0); t=1 is exactly uniform.
+pi(t1) majorizes pi(t2) for all t1 < t2 -- this is a mathematical
+guarantee of the construction, not something to be tested.
+
+    t   pi_min  1/pi_min  distribution
+  0.0   0.0200     50.00  [0.5, 0.25, 0.1, 0.08, 0.05, 0.02]
+  0.2   0.0493     20.27  [0.433, 0.233, 0.113, 0.097, 0.073, 0.049]
+  0.4   0.0787     12.71  [0.367, 0.217, 0.127, 0.115, 0.097, 0.079]
+  0.6   0.1080      9.26  [0.3, 0.2, 0.14, 0.132, 0.12, 0.108]
+  0.8   0.1373      7.28  [0.233, 0.183, 0.153, 0.149, 0.143, 0.137]
+  1.0   0.1667      6.00  [0.167, 0.167, 0.167, 0.167, 0.167, 0.167]
+
+========================================================================================
+HEADLINE - macro F1 and rarest-class F1 at a fixed budget (300 labels)
+========================================================================================
+
+    t   pi_min  1/pi_min  rand macroF1  AL macroF1  rand rareF1  AL rareF1   savings
+  0.0   0.0200     50.00        0.7071      0.7434       0.3989     0.4884    +40.9%
+  0.2   0.0493     20.27        0.7432      0.7704       0.5038     0.5830    +47.4%
+  0.4   0.0787     12.71        0.7539      0.7759       0.6016     0.6473    +31.3%
+  0.6   0.1080      9.26        0.7702      0.7933       0.6922     0.6958    +28.3%
+  0.8   0.1373      7.28        0.7815      0.7904       0.7186     0.7303    +18.5%
+  1.0   0.1667      6.00        0.7677      0.7958       0.8180     0.8217    +49.5%
+
+========================================================================================
+DOES THE ORDERING PREDICTED BY THE THEORY ACTUALLY HOLD?
+========================================================================================
+
+Prediction: as t decreases (pi becomes more unequal, pi_min shrinks, the
+distribution moves AWAY from the smoothed/distilled direction), random
+sampling's rarest-class recall should degrade, and the AL/random gap
+(savings) should grow. This is the same direction as the real-archive
+finding (SIMBAD truth, more skewed, showed BIGGER AL savings than VarWISE's
+smoothed predictions).
+
+  random rarest-class F1 vs pi_min (sorted by pi_min ascending):
+    pi_min=0.0200  rand_rare_F1=0.3989
+    pi_min=0.0493  rand_rare_F1=0.5038
+    pi_min=0.0787  rand_rare_F1=0.6016
+    pi_min=0.1080  rand_rare_F1=0.6922
+    pi_min=0.1373  rand_rare_F1=0.7186
+    pi_min=0.1667  rand_rare_F1=0.8180
+  monotonically non-decreasing in pi_min (allowing noise): True
+
+  Spearman rho(pi_min, savings) = -0.086
+  (theory predicts negative: smaller pi_min -> bigger savings)
+  compare to the real-archive finding: rho(prevalence, gain) = -0.857 (per-class, not per-scenario, but same predicted sign)
+
+========================================================================================
+CAVEATS
+========================================================================================
+
+  - This tests the DIRECTION and rough shape of the conjecture, not a tight
+    quantitative match to the idealized k_min/pi_min formula -- real active
+    learning does not achieve the idealized O(1)-per-class exploration cost
+    the sketch assumed, and LogisticRegression's decision boundaries interact
+    with class_sep in ways the stylized model ignores.
+  - Single feature-generation recipe (linear-ish clusters via
+    make_classification); a harder separability regime might change the
+    quantitative relationship even if the qualitative ordering holds.
+  - 3 seeds per t; the per-t noise band is visible in the F1 curves above and
+    should be read alongside the point estimates, not instead of them.
+  - This is evidence FOR the conjectured mechanism under controlled
+    conditions, not a formal proof that real classifiers satisfy assumption
+    (ii) (idealized O(K) active-learning exploration cost).
