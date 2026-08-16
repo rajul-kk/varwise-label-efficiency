@@ -1,0 +1,33 @@
+======================================================================================
+FOLLOW-UP: is the low-reliability `ecl` correction real periodicity
+or a classifier default?
+======================================================================================
+
+  predicted ecl, low reliability:  21,289
+  predicted ecl, validated/high:   357
+
+======================================================================================
+PERIOD SIGNIFICANCE: hypothesis population vs a genuine ecl reference
+======================================================================================
+
+  group                                         n  median psig  % psig>20  % no period
+  Reference: VarWISE ea/ew (validated F1~0.99)  119,713        60.42      94.5%         0.0%
+  Predicted ecl, low reliability           21,289         6.84      12.7%        45.3%
+  Predicted ecl, validated/high reliability      357         8.96      17.3%        44.8%
+
+======================================================================================
+INTERPRETATION
+======================================================================================
+
+  The low-reliability `ecl` predictions have median period_significance
+  6.84, far below the genuine ea/ew reference (60.42) --
+  less than a third. 45% have no usable period at all,
+  which is disqualifying for a class defined by periodicity.
+
+  VERDICT: the hypothesis is NOT supported. These are not eclipsing binaries
+  the classifier correctly identified from weak training data; the model is
+  defaulting to `ecl` as something closer to a residual/catch-all class when
+  it isn't confident about lpv/agn/yso, rather than detecting genuine
+  eclipsing signal. The `reliability=low` flag in
+  varwise_transient_corrections.csv is doing its job -- users should treat
+  these 21,289 rows as unclassified, not as tentative eclipsing binaries.

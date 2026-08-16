@@ -1,0 +1,57 @@
+========================================================================================
+CEPHEID PERIOD-LUMINOSITY VALIDATION
+========================================================================================
+
+Sample: cep with period + parallax S/N > 5
+  Pure:       1,467
+  Extended:   8,437
+
+Mid-IR Cepheid PL relations have intrinsic scatter ~0.1-0.2 mag --
+far tighter than RR Lyrae's near-degenerate relation. If periods are
+bad, this relation has much less slack to absorb it, so contamination
+should show up as scatter more clearly here than for `rr`.
+
+========================================================================================
+SCATTER UNDER SUCCESSIVE CUTS
+========================================================================================
+
+  sample                                                 n   scatter     kept    slopeintercept
+  pure, no cuts                                      1,467     2.735     99.9%    -0.28    -1.90
+  pure, confidence >= 0.9                            1,182     2.647     99.9%    -0.69    -1.90
+  pure, period_significance > 20                       833     1.968     98.8%    -0.52    -2.48
+  pure, suspect_period = 0                           1,365     2.656     99.9%    -0.81    -1.57
+  ----------------------------------------------------------------------------------
+  extended, no cuts                                  8,437     1.954     97.9%     0.91     0.12
+  extended, confidence >= 0.9                        2,707     2.426     99.3%     2.02    -2.51
+  extended, period_significance > 20                   979     2.453     99.8%    -0.48    -2.10
+  extended, suspect_period = 0                       7,575     2.025     98.5%     1.06    -0.03
+  ----------------------------------------------------------------------------------
+
+========================================================================================
+ABSOLUTE MAGNITUDE BY TIER (the decisive test used for RR Lyrae)
+========================================================================================
+
+  Unlike RR Lyrae (fixed M_W1), Cepheid M_W1 depends on period via
+  the PL relation itself, so there is no single reference magnitude.
+  Instead: does the Pure-tier PL FIT predict the Extended-tier
+  points well, or do they scatter off it systematically?
+
+  Pure-tier reference fit (confidence>=0.9): M_W1 = -1.90 + -0.69*log10(P), scatter=2.647
+  Extended, no cuts                        n=  8,437  RMS off Pure fit=4.554  median offset=+4.200
+  Extended, confidence >= 0.9              n=  2,707  RMS off Pure fit=4.137  median offset=+2.418
+  Extended, period_significance > 20       n=    979  RMS off Pure fit=2.254  median offset=-0.469
+
+========================================================================================
+CAVEATS
+========================================================================================
+
+  - Same Lutz-Kelker / no-extinction-correction caveats as the RR Lyrae
+    check. Cepheids are typically more distant and more affected by
+    extinction than RR Lyrae, which could inflate scatter independent of
+    period quality -- read the comparison as relative between cuts, not as
+    an absolute scatter budget.
+  - VarWISE's own inspection already flags Cepheid periods near 6 months/1
+    year as suspect due to the survey's cadence (see RESULTS.md); this test
+    is complementary to, not a replacement for, that check.
+  - Sample sizes are much smaller than the RR Lyrae case (thousands, not
+    hundreds of thousands), so results here carry more sampling noise.

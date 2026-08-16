@@ -52,12 +52,31 @@ target.
 **What is idealized, not proven.** Two assumptions carry the whole argument:
 (i) random scales as `Θ(1/π_min)`, and (ii) active learning scales as `O(K)`,
 independent of `π_min`. Neither holds exactly for a real gradient-boosted or
-logistic classifier; both are standard simplifications in the rare-category
-active-learning literature (closest prior art: He & Carbonell 2007, "Rare
-Class Discovery Based on Active Learning"; Pelleg & Moore 2004). No existing
-paper was found connecting this specifically to *distillation-target
-evaluation bias* in label-efficiency studies — see the novelty note at the
-end.
+logistic classifier.
+
+Assumption (i) is elementary probability (the expected wait time for a
+negative-binomial/coupon-collector process), not attributed to any specific
+paper. Assumption (ii) and the overall claim that active learning
+dramatically outperforms random sampling for rare-category discovery is an
+*established empirical phenomenon* in the rare-category-detection literature
+— He & Carbonell 2008, "Rare Class Discovery Based on Active Learning"
+(ISAIM), and Pelleg & Moore 2004, "Active Learning for Anomaly and
+Rare-Category Detection" (NeurIPS), both demonstrate large empirical gains
+(Pelleg & Moore: their method can "quickly zoom in on an anomaly set
+containing a few tens of points in a dataset of hundreds of thousands").
+
+**Citation check performed 17 August 2026** (both papers fetched and
+confirmed to exist under the cited title/authors/venue): neither paper was
+found to state the specific `Θ(1/π_min)` vs `O(K)` asymptotic scaling law,
+or a majorization/Schur-convexity framing, in those terms. That specific
+derivation is original to this note, built from standard, individually
+well-known components (a coupon-collector bound and a textbook
+convex-plus-symmetric Schur-convexity criterion) rather than drawn from the
+cited papers directly. The citations above should be read as "closest prior
+art for the empirical phenomenon this mechanism is trying to explain," not
+as "this scaling law is already proven there." No existing paper was found
+connecting the mechanism specifically to *distillation-target evaluation
+bias* in label-efficiency studies — see the novelty note at the end.
 
 ---
 

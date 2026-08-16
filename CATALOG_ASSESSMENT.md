@@ -132,6 +132,56 @@ uninformative. Scatter stays at 2.4–3.1 under every cut, and
 and overtone pulsators occupy different PL sequences, so a single fit cannot
 be tight. The LPV periods are neither validated nor impugned by this test.
 
+### Attempted extension to Cepheids — inconclusive, reported honestly
+
+The RR Lyrae PL check was decisive enough to ask whether the same test
+sharpens further on Cepheids, whose mid-IR PL relation is the tightest
+standard-candle relation in astronomy (intrinsic scatter ~0.1–0.2 mag, versus
+RR Lyrae's much looser relation). It does not — and the reason matters more
+than the null result itself.
+
+**Even the Pure-tier, high-confidence Cepheid fit shows 2.6 mag of scatter**,
+an order of magnitude above what a genuine Cepheid PL relation should show.
+That rules out reading this as "Cepheid periods are 26× worse than RR Lyrae
+periods." It means the test itself doesn't work for this class as
+constructed: Cepheids sit much farther away than RR Lyrae, so a parallax
+S/N > 5 cut leaves real residual distance-precision problems (worse
+Lutz-Kelker bias), and no extinction correction was applied — Cepheids trace
+young, disk-concentrated populations that are more dust-affected than the
+older, more spread-out RR Lyrae population.
+
+The *relative* trend across cuts is at least directionally consistent with
+the RR Lyrae story — comparing Extended `cep` against the Pure-tier PL fit,
+RMS offset falls from 4.55 mag (no cuts) to 2.25 mag (`period_significance`
+> 20), and the median offset flips from +4.2 to −0.5 — but given the
+untrustworthy baseline, this is reported as **directionally suggestive, not
+a second independent confirmation**. A proper version of this test would
+need an extinction correction and a tighter parallax S/N cut before it could
+carry independent weight.
+
+### Follow-up: is the flagged `ecl` correction real, or a classifier default?
+
+The transient-rule replacement (§2 below) predicts `ecl` for 21,646 objects,
+of which 21,289 were flagged low-reliability (trained on only 344 examples,
+CV F1 0.598) and named "the clearest target for follow-up." Resolved with an
+independent check: eclipsing binaries are periodic by definition, so real
+ones should show significant `period_significance` regardless of what the
+classifier's own confidence says.
+
+| group | n | median `period_significance` | % with `period_significance` > 20 | % with no period |
+|---|---|---|---|---|
+| Reference: VarWISE `ea`/`ew` (independently validated, F1 ≈ 0.99) | 119,713 | **60.4** | 94.5% | 0.0% |
+| Predicted `ecl`, low reliability | 21,289 | **6.8** | 12.7% | **45.3%** |
+| Predicted `ecl`, validated/high | 357 | 9.0 | 17.3% | 44.8% |
+
+**Verdict: the hypothesis is not supported.** Median period significance is
+less than a ninth of the genuine reference, and 45% have no usable period at
+all — disqualifying for a class defined by periodicity. The model is most
+likely defaulting to `ecl` as a residual/catch-all rather than detecting
+real eclipsing signal. The `reliability=low` flag is doing its job; these
+21,289 rows should be treated as unclassified, not as tentative eclipsing
+binaries.
+
 ### Recommended cuts for Extended-tier users
 
 1. For any period-dependent use, add **`period_significance > 20`**. This is
