@@ -162,6 +162,22 @@ VarWISE assigns `cv` and `sn` with a rule, not the classifier: VARnet flags a
 transient, then a 2″ crossmatch against Gaia DR3 galaxy/QSO catalogs assigns
 SN on a match and CV otherwise.
 
+> **Correction (from the full-catalog scan).** An earlier version of this
+> document treated `cv` as entirely rule-assigned. It is not. **`cv` is a mix
+> of two mechanisms**, exactly separable by whether `confidence` and `period1`
+> are null — there are **zero** mixed combinations:
+>
+> | class | total | rule-assigned | classifier-assigned |
+> |---|---|---|---|
+> | `cv` | 34,316 | **28,419 (82.8%)** | **5,897 (17.2%)** |
+> | `sn` | 9,596 | 9,596 (100%) | 0 |
+>
+> The two sub-populations perform very differently against SIMBAD:
+> rule-assigned `cv` precision **0.013**, classifier-assigned `cv` precision
+> **0.144** — an 11× difference. The classifier-assigned portion is still
+> poor, but it is not the same failure. The catalog does not label this
+> distinction; users must derive it from the null pattern.
+
 Of 14,955 rule-assigned transients carrying an independent SIMBAD type, what
 they actually are:
 
@@ -320,6 +336,46 @@ Most informative features: `bp_rp`, `n_obs`, `w1_w2`, `w3_w4`, `w2_w3`,
   that this model beats theirs on their own distribution.
 - SIMBAD YSO labels are ~58% `YSO_Candidate`.
 - Restricted to objects with a mapped SIMBAD type, which skew bright.
+
+---
+
+---
+
+## 4. Full-catalog scan
+
+`scripts/full_catalog_scan.py` sweeps every published column looking for what
+targeted analysis would miss. **The catalog's basic construction is sound**,
+and that deserves saying as plainly as the criticisms:
+
+- **No duplicate `cluster_id`, `designation`, or coordinates** — 457,080
+  unique on all three.
+- **Every sky-distribution sanity check passes.** `lpv` median |b| = 1.9°
+  (90.6% in the Galactic plane), `yso` 2.4°, `agn` 29.1° (48.6% at |b| > 30°).
+  These are exactly right for AGB stars, star-forming regions, and
+  extragalactic sources respectively.
+- **`n_obs` rises toward the ecliptic poles** (median 558 at |dec| > 66° vs
+  253 at |dec| < 30°), matching WISE's survey geometry.
+- **No pile-up at the period search rails** — 3 objects at the 0.1 d lower
+  bound and 39 at the 999 d upper bound out of 419,065.
+- **No objects with fewer than 38 epochs.**
+
+Independent corroboration of the transient-rule finding: **`sn` has median
+|b| = 38.3° with 64% at |b| > 30°** — a high-latitude, extragalactic
+distribution consistent with the population being AGN rather than Galactic
+transients.
+
+Three genuine flags:
+
+| severity | finding |
+|---|---|
+| MED | **`cv` mixes two assignment mechanisms** (see correction above) |
+| MED | **W1 amplitude and `variability_snr` are nearly uncorrelated** (Spearman ρ = **+0.099**). Two columns a user would reasonably treat as interchangeable measures of "how variable" rank objects very differently. |
+| LOW | 7 non-positive photometric uncertainties; 13.0% of objects have `confidence` exactly 1.000 (probability saturation) |
+
+**A flag I raised and then withdrew.** 21,818 objects have BP−RP > 5, which
+looks like bad cross-matching. It is not: 86% are `lpv` and their median W1 is
+8.39 versus 12.60 for the catalog overall. Miras genuinely reach BP−RP > 5.
+These are real red giants.
 
 ---
 
