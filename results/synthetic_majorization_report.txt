@@ -21,12 +21,12 @@ HEADLINE - macro F1 and rarest-class F1 at a fixed budget (300 labels)
 ========================================================================================
 
     t   pi_min  1/pi_min  rand macroF1  AL macroF1  rand rareF1  AL rareF1   savings
-  0.0   0.0200     50.00        0.7071      0.7434       0.3989     0.4884    +40.9%
-  0.2   0.0493     20.27        0.7432      0.7704       0.5038     0.5830    +47.4%
-  0.4   0.0787     12.71        0.7539      0.7759       0.6016     0.6473    +31.3%
-  0.6   0.1080      9.26        0.7702      0.7933       0.6922     0.6958    +28.3%
-  0.8   0.1373      7.28        0.7815      0.7904       0.7186     0.7303    +18.5%
-  1.0   0.1667      6.00        0.7677      0.7958       0.8180     0.8217    +49.5%
+  0.0   0.0200     50.00        0.6982      0.7293       0.3753     0.4131    +34.4%
+  0.2   0.0493     20.27        0.7365      0.7696       0.5382     0.6110    +35.5%
+  0.4   0.0787     12.71        0.7531      0.7849       0.6404     0.6961    +44.8%
+  0.6   0.1080      9.26        0.7731      0.7843       0.7169     0.7054    +17.0%
+  0.8   0.1373      7.28        0.7749      0.7938       0.7418     0.7518    +29.3%
+  1.0   0.1667      6.00        0.7717      0.7950       0.7844     0.8117    +41.7%
 
 ========================================================================================
 DOES THE ORDERING PREDICTED BY THE THEORY ACTUALLY HOLD?
@@ -40,15 +40,15 @@ finding (SIMBAD truth, more skewed, showed BIGGER AL savings than VarWISE's
 smoothed predictions).
 
   random rarest-class F1 vs pi_min (sorted by pi_min ascending):
-    pi_min=0.0200  rand_rare_F1=0.3989
-    pi_min=0.0493  rand_rare_F1=0.5038
-    pi_min=0.0787  rand_rare_F1=0.6016
-    pi_min=0.1080  rand_rare_F1=0.6922
-    pi_min=0.1373  rand_rare_F1=0.7186
-    pi_min=0.1667  rand_rare_F1=0.8180
+    pi_min=0.0200  rand_rare_F1=0.3753
+    pi_min=0.0493  rand_rare_F1=0.5382
+    pi_min=0.0787  rand_rare_F1=0.6404
+    pi_min=0.1080  rand_rare_F1=0.7169
+    pi_min=0.1373  rand_rare_F1=0.7418
+    pi_min=0.1667  rand_rare_F1=0.7844
   monotonically non-decreasing in pi_min (allowing noise): True
 
-  Spearman rho(pi_min, savings) = -0.086
+  Spearman rho(pi_min, savings) = -0.029
   (theory predicts negative: smaller pi_min -> bigger savings)
   compare to the real-archive finding: rho(prevalence, gain) = -0.857 (per-class, not per-scenario, but same predicted sign)
 

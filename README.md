@@ -69,9 +69,14 @@ Track B (independent SIMBAD labels), XGBoost — VarWISE's own booster family:
   VarWISE's own predictions versus 85.7% against real labels, because VarWISE
   over-predicts rare classes and so looks more balanced than reality. This can
   be formalized (majorization/Schur-convexity of the random-sampling
-  requirement) and holds up cleanly on the core mechanism in controlled
-  synthetic tests, though the specific quantitative prediction is only weakly
-  supported at 3 seeds — see **[THEORY_NOTE.md](THEORY_NOTE.md)**.
+  requirement), and the core mechanism — random sampling starves the rarest
+  class in a way that provably worsens as it gets rarer — holds up cleanly on
+  controlled synthetic data, including after a 10-seed rerun. Whether that
+  aggregates into a robust "savings track prevalence" prediction remains
+  genuinely open: a 10-seed rerun sharpened each scenario's own estimate but
+  left the correlation across scenarios *less* stable (ρ flipped from −0.31
+  to +0.70), traced to only 6 scenario points being tested, not to
+  insufficient seeds — see **[THEORY_NOTE.md](THEORY_NOTE.md)**.
 
 ### Independent validation of VarWISE
 

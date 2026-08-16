@@ -8,14 +8,14 @@ used throughout this repo). Then: labels random needs vs labels
 margin needs to first reach that target.
 
     t   pi_min  1/pi_min  rand endpoint   rand n  margin n   savings
-  0.0   0.0200     50.00         0.4883      768       603    +21.5%
-  0.2   0.0493     20.27         0.6333      768       482    +37.3%
-  0.4   0.0787     12.71         0.6890      768       253    +67.0%
-  0.6   0.1080      9.26         0.7476      768     never       n/a
-  0.8   0.1373      7.28         0.7668      768       390    +49.2%
-  1.0   0.1667      6.00         0.8128      768       295    +61.6%
+  0.0   0.0200     50.00         0.4959      768       345    +55.1%
+  0.2   0.0493     20.27         0.5619      768       191    +75.1%
+  0.4   0.0787     12.71         0.6469      768       287    +62.6%
+  0.6   0.1080      9.26         0.7189      768       489    +36.3%
+  0.8   0.1373      7.28         0.7446      768       388    +49.4%
+  1.0   0.1667      6.00         0.8307      768       315    +59.0%
 
-Spearman rho(pi_min, rare-class-specific savings) = +0.700
+Spearman rho(pi_min, rare-class-specific savings) = -0.314
 (theory predicts negative; real-archive per-class finding was -0.857)
 
 ========================================================================================

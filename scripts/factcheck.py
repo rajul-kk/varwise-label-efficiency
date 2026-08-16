@@ -432,8 +432,9 @@ def main():
 
         check("t=0.0 pi_min", pi_of_t(0.0).min(), 0.0200, tol=0.0005)
         check("t=1.0 pi_min", pi_of_t(1.0).min(), 0.1667, tol=0.0005)
-        expected_rare_f1 = {0.02: 0.399, 0.0493: 0.504, 0.0787: 0.602,
-                           0.108: 0.692, 0.1373: 0.719, 0.1667: 0.818}
+        # 10-seed rerun values (superseded the original 3-seed run)
+        expected_rare_f1 = {0.02: 0.375, 0.0493: 0.538, 0.0787: 0.640,
+                           0.108: 0.717, 0.1373: 0.742, 0.1667: 0.784}
         for k, v in expected_rare_f1.items():
             match = min(rare_f1.keys(), key=lambda x: abs(x - k))
             check(f"random rarest-F1 at pi_min~{k}", rare_f1[match], v, tol=0.005)
@@ -448,8 +449,8 @@ def main():
     rare_report = ROOT / "results" / "synthetic_rare_class_report.txt"
     if rare_report.exists():
         txt = rare_report.read_text(encoding="utf-8")
-        check("rare-class-specific rho present",
-              "rho(pi_min, rare-class-specific savings) = -0.314" in txt,
+        check("rare-class-specific rho present (10-seed rerun)",
+              "rho(pi_min, rare-class-specific savings) = +0.700" in txt,
               True, tol=0, fmt="{}")
 
     print("\n" + "=" * 72)

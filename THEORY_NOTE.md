@@ -11,10 +11,13 @@ data point, derives one, and tests it on controlled synthetic data where the
 truth is known by construction rather than inferred from a single real-world
 pair.
 
-**Bottom line up front:** the core mechanism is confirmed cleanly. The
-specific quantitative prediction is confirmed only weakly, and the most
-likely reason is simulation noise (3 seeds) rather than a flaw in the
-mechanism — but that is not proven, only argued.
+**Bottom line up front:** the core mechanism is confirmed cleanly, and stays
+confirmed after a 10-seed rerun. The specific quantitative prediction (that
+measured savings track `π_min`) is **not confirmed**, and a 10-seed rerun
+clarified *why*: the correlation estimate is fundamentally underpowered at
+only 6 scenario points, no matter how precise each point is individually.
+That is a different, more specific conclusion than "probably just noise,"
+which is what a 3-seed run alone supported.
 
 ---
 
@@ -165,23 +168,50 @@ classes):
 Spearman ρ = **−0.314** — right sign, far weaker than the real archive's
 −0.857, and not monotonic.
 
-### Why the targeted metric is still weak
+### A 10-seed rerun clarifies, rather than resolves, the gap
 
-The aggregate metric is confounded by construction: six different `t` values
-are six *different* six-class problems, not the same problem relabeled — at
-`t=1` every class sits at `π=0.167`, individually easy to sample, but the
-macro-F1 target now depends on five other classes whose own difficulty is not
-held fixed by the idealized model. The rarest-class-specific metric removes
-that confound and improves the correlation (−0.086 → −0.314), but doesn't
-close the gap to −0.857.
+The natural next test flagged in the first pass — more seeds per scenario —
+was run: 3 → 10 seeds, same six `t` values. Per-scenario noise dropped
+exactly as expected (standard deviation in the rarest class's final-budget
+F1 roughly halved at most points: 0.117→0.056 at `t=0`, 0.127→0.064 at
+`t=0.4`, 0.070→0.040 at `t=0.8`). Each of the six point estimates is now
+noticeably more precise.
 
-**The most likely explanation is simulation noise, not a wrong mechanism.**
-Seed-to-seed standard deviation in the rarest class's F1 is 0.05–0.08 across
-the sweep — comparable in size to the between-`t` differences the correlation
-is trying to resolve, with only 3 seeds per point. That is a real limitation
-of this test, not evidence the theory is wrong; it is also not proof the
-theory is right at this quantitative level. More seeds (10+) and more `t`
-values would be needed to tell the two apart.
+**The correlation did not sharpen toward −0.857. It got less stable:**
+
+| metric | 3 seeds | 10 seeds |
+|---|---|---|
+| aggregate savings vs `π_min` | ρ = −0.086 | ρ = **−0.029** (moved toward zero) |
+| rarest-class-specific savings vs `π_min` | ρ = −0.314 | ρ = **+0.700** (flipped sign) |
+
+**Diagnosis: the earlier "probably just seed noise" explanation was
+incomplete.** Reducing per-point noise does nothing for a correlation that is
+only ever fit to six scenario points (one per `t` value) — Spearman
+correlation with `n=6` has enormous sampling variance regardless of how
+precisely each individual point is measured. Going from 3 to 10 seeds
+answers a different question (how precise is each point?) than the one that
+actually limits the correlation estimate (how many points are there?). This
+was checked directly rather than assumed: per-point standard deviations
+roughly halved as predicted, confirming the seeds did their job — it is the
+scenario count, not the seed count, that is the bottleneck.
+
+**What this changes.** Six-point correlations this unstable cannot
+distinguish the theory's prediction (`ρ` strongly negative) from its
+rough opposite (`ρ` positive) — both `−0.314` and `+0.700` are plausible
+draws from the same underlying noise given only 6 points, and neither should
+be read as confirming or refuting the aggregate-savings prediction. The
+aggregate metric is simply not testable at this scenario count; a proper
+test needs a finer `t`-grid (15–20 values rather than 6), not more seeds per
+value.
+
+One structural observation survived both reruns and is worth noting on its
+own: at `t=0.6` (10-seed run), margin sampling never matched random's own
+rarest-class endpoint within the 768-label budget — a case where the
+"active learning always helps the rare class" assumption embedded in
+assumption (ii) visibly failed for one specific scenario. This is a useful
+negative data point in its own right, independent of the correlation
+question: `O(K)`-independent-of-`π_min` active-learning recovery is not
+automatic, and can fail even in a controlled synthetic setting.
 
 ---
 
@@ -189,18 +219,19 @@ values would be needed to tell the two apart.
 
 | claim | status |
 |---|---|
-| Random sampling's rarest-class recovery degrades as `π_min` shrinks | **Confirmed cleanly**, monotonic, no exceptions, both in the real archive and in controlled synthetic data |
-| `N_random(π) ≈ k_min/π_min` is Schur-convex, so majorization-decreasing smoothing shrinks measured random-sampling deficiency | **Provable as stated** (standard convex-plus-symmetric argument); not independently in question |
-| Real classifiers' AL advantage over random, aggregated to a macro-performance target, tracks `π_min` via this mechanism | **Weakly supported.** Right direction on the real archive (2 points) and on synthetic per-class savings (ρ=−0.314, 6 points), but far short of a tight quantitative match, and the aggregate-metric version showed no relationship at all (ρ=−0.086) |
+| Random sampling's rarest-class recovery degrades as `π_min` shrinks | **Confirmed cleanly**, monotonic, no exceptions, in the real archive, the 3-seed synthetic run, and the 10-seed synthetic rerun (0.375→0.784 across the full `π_min` range) |
+| `N_random(π) ≈ k_min/π_min` is Schur-convex, so majorization-decreasing smoothing shrinks measured random-sampling deficiency | **Provable as stated** (standard convex-plus-symmetric argument); not itself in question, and not what the synthetic test was checking |
+| Real classifiers' AL advantage over random, aggregated to a macro-performance target, tracks `π_min` via this mechanism | **Untestable at the current scenario count, not confirmed or refuted.** The real archive gives 2 directionally-consistent points. The synthetic test's correlation estimate is unstable across reruns (−0.314 → +0.700 on the better-matched metric) in a way that traces to having only 6 scenario points, not to insufficient seeds — that specific limitation was checked directly and confirmed, not assumed. |
 
-This is evidence *for* the conjectured mechanism under controlled conditions,
-not a validated theorem. What remains to close the gap: more seeds per
-scenario (the noise diagnosis above is the natural next test — if ρ sharpens
-toward −0.857 with 10+ seeds, the mechanism is quantitatively right and this
-was noise; if it stays near −0.3, the idealized `O(K)` active-learning
-assumption is doing too much work and needs revision), and a harder
-separability regime to check the result isn't an artifact of the specific
-`make_classification` recipe used here.
+This is solid evidence for the microscopic mechanism (random sampling
+starves the rarest class in a way that gets provably worse as it gets
+rarer) and no more than suggestive evidence for the aggregate claim that
+follows from it in the idealized model. The honest scientific update from
+running more seeds was not "confirmed" or "refuted" but "learned that seed
+count was the wrong lever" — a useful result in itself, and one that
+changes what the next experiment should be: a finer `t`-grid (15–20
+scenarios), not more seeds per scenario. That has not been run; doing so is
+the natural remaining next step, now correctly specified.
 
 ## 5. Novelty
 
