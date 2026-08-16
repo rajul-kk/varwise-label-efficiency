@@ -1,0 +1,85 @@
+======================================================================================
+DOWNLOAD INTEGRITY VERIFICATION
+======================================================================================
+
+Stored parquet: 457,080 rows x 37 columns
+
+======================================================================================
+1. FRESH ROW COUNTS (queried live, right now)
+======================================================================================
+
+  varwisepure live count: 457,080  (stored: 457,080)
+    MATCH
+  varwiseext  live count: 1,918,082  (paper reports 1,918,082)
+    MATCH
+
+======================================================================================
+2. ROW-LEVEL SPOT CHECK - fresh re-fetch vs stored, by cluster_id
+======================================================================================
+
+  re-fetched 60 of 60 sampled cluster_ids
+
+  compared 60 rows x 36 columns (2,160 cell comparisons)
+  mismatches found: 0
+  ALL VALUES MATCH the live source exactly
+
+======================================================================================
+3. RA-SLICE BOUNDARY INTEGRITY (download used 12 slices of 30 deg)
+======================================================================================
+
+    boundary   stored n (+/-0.01deg)    live n    status
+          30                       8         8        OK
+          60                      12        12        OK
+          90                      19        19        OK
+         120                      20        20        OK
+         150                      15        15        OK
+         180                       7         7        OK
+         210                      18        18        OK
+         240                      37        37        OK
+         270                      65        65        OK
+         300                      31        31        OK
+         330                       9         9        OK
+
+  no duplication or gaps at any of the 11 internal RA seams
+
+  duplicate cluster_id in the full downloaded set: 0
+
+======================================================================================
+4. STRING-COLUMN INTEGRITY
+======================================================================================
+
+  designations containing a null byte: 0
+  designations containing a Unicode replacement char (decode failure): 0
+  designations matching 'VarWISE Jhhmmss.ss+ddmmss.s': 100.0%
+
+======================================================================================
+5. DERIVED-CACHE CROSS-CHECKS
+======================================================================================
+
+  varwise_ext_transients.parquet: 79,293 rows
+    cv: cached=69,418  live=69,418  reported-in-paper-analysis=69,418
+    sn: cached=9,875  live=9,875  reported-in-paper-analysis=9,875
+
+  pl_sample.parquet: 323,026 rows
+    Pure rr subset: cached=6,671  live=6,671
+
+======================================================================================
+6. SCHEMA AND DTYPE SANITY
+======================================================================================
+
+  column              dtype       sample value
+  designation         object      VarWISE J002622.98-164926.0
+  ra                  float64     6.59578
+  vartype             object      agn
+  confidence          float64     0.9998
+  w1mag               float64     15.233
+  plx                 float64     -0.8815
+
+======================================================================================
+SUMMARY
+======================================================================================
+
+  No integrity issues found. The stored data matches the live
+  IRSA source exactly on every check performed: fresh row counts,
+  60-object value-for-value spot check, all 11 RA-slice seams,
+  string encoding, and derived-cache consistency.
