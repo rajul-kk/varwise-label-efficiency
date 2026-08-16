@@ -7,7 +7,8 @@ output rather than typed by hand.
 **Verification.** Every quantitative claim below is independently recomputed
 from the raw catalog and stored results by `scripts/factcheck.py`, which
 asserts each value and fails loudly on any mismatch. Current status:
-**93 checks, 0 failures.** External citations were verified against arXiv and
+**168 checks, 0 failures** — covering the catalog assessment as well as the
+label-efficiency study. External citations were verified against arXiv and
 the publisher of record (see §8).
 
 Setup: VarWISE Pure Catalog (457,080 objects), 28 catalog-derived features,

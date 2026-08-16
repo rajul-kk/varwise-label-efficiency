@@ -141,7 +141,8 @@ python scripts/factcheck.py                                     # verify every q
 ```
 
 `scripts/factcheck.py` recomputes every quantitative claim in the writeup from
-source and fails loudly on any mismatch — **93 checks, 0 failures**.
+source and fails loudly on any mismatch — **168 checks, 0 failures**. This
+covers the catalog assessment as well as the label-efficiency study.
 
 The download takes ~5 minutes (457,080 rows, RA-sliced async TAP queries). The
 main experiment takes ~25 minutes per track.

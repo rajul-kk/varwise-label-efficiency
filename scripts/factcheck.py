@@ -260,6 +260,148 @@ def main():
     check("full-sup weighted F1 XGB", refx.weighted_f1.mean(), 0.979)
     check("full-sup weighted F1 LGB", refl.weighted_f1.mean(), 0.947)
 
+    # =================================================================
+    # CATALOG_ASSESSMENT.md claims
+    # =================================================================
+    print("\n" + "=" * 72)
+    print("SECTION 8 - full-catalog scan (CATALOG_ASSESSMENT.md section 4)")
+    print("=" * 72)
+    check("unique cluster_id", df.cluster_id.nunique(), 457080, tol=0, fmt="{}")
+    check("unique designation",
+          df.designation.astype("string").str.strip().nunique(), 457080,
+          tol=0, fmt="{}")
+    check("rows sharing exact coordinates",
+          int(df.duplicated(subset=["ra", "dec"]).sum()), 0, tol=0, fmt="{}")
+
+    # the cv/sn mechanism split
+    print("\n  cv/sn mechanism split:")
+    cv = df[df.vartype == "cv"]
+    sn_ = df[df.vartype == "sn"]
+    check("cv total", len(cv), 34316, tol=0, fmt="{}")
+    check("cv rule-assigned", int((cv.confidence.isna() & cv.period1.isna()).sum()),
+          28419, tol=0, fmt="{}")
+    check("cv classifier-assigned",
+          int((cv.confidence.notna() & cv.period1.notna()).sum()), 5897,
+          tol=0, fmt="{}")
+    check("cv mismatched combinations",
+          int((cv.confidence.isna() ^ cv.period1.isna()).sum()), 0, tol=0, fmt="{}")
+    check("sn rule-assigned", int((sn_.confidence.isna() & sn_.period1.isna()).sum()),
+          9596, tol=0, fmt="{}")
+    # precision of each cv sub-population
+    cvt = cv[cv["truth"].notna()] if "truth" in cv else cv.assign(
+        truth=truth[cv.index])[lambda d: d.truth.notna()]
+    rule_cv = cvt[cvt.confidence.isna()]
+    clf_cv = cvt[cvt.confidence.notna()]
+    check("rule-assigned cv precision", (rule_cv.truth == "cv").mean(), 0.0129,
+          tol=0.0005, fmt="{:.4f}")
+    check("classifier-assigned cv precision", (clf_cv.truth == "cv").mean(),
+          0.1439, tol=0.0005, fmt="{:.4f}")
+
+    print("\n  distribution and consistency:")
+    ok = df[["w1_amp", "variability_snr"]].dropna()
+    check("Spearman rho(W1 amp, variability_snr)",
+          ok.w1_amp.corr(ok.variability_snr, method="spearman"), 0.099, tol=0.005)
+    check("confidence exactly 1.000 (% of non-null)",
+          100 * (df.confidence == 1.0).sum() / df.confidence.notna().sum(),
+          13.0, tol=0.2, fmt="{:.1f}")
+    check("period1 at lower rail", int((df.period1 <= 0.1001).sum()), 3,
+          tol=0, fmt="{}")
+    check("period1 at upper rail", int((df.period1 >= 998.9).sum()), 39,
+          tol=0, fmt="{}")
+    check("minimum n_obs", int(df.n_obs.min()), 38, tol=0, fmt="{}")
+
+    # galactic latitude sanity
+    ra_r, dec_r = np.radians(df.ra.values), np.radians(df.dec.values)
+    ra_ngp, dec_ngp = np.radians(192.85948), np.radians(27.12825)
+    gb = np.degrees(np.arcsin(np.sin(dec_r) * np.sin(dec_ngp) +
+                              np.cos(dec_r) * np.cos(dec_ngp) *
+                              np.cos(ra_r - ra_ngp)))
+    df["_gb"] = gb
+    print("\n  sky distribution:")
+    for cls, med in [("lpv", 1.9), ("yso", 2.4), ("agn", 29.1), ("sn", 38.3)]:
+        check(f"{cls} median |b|", np.median(np.abs(df.loc[df.vartype == cls, "_gb"])),
+              med, tol=0.1, fmt="{:.1f}")
+    check("sn fraction at |b| > 30",
+          100 * np.mean(np.abs(df.loc[df.vartype == "sn", "_gb"]) > 30), 64.0,
+          tol=0.5, fmt="{:.1f}")
+
+    # withdrawn flag: BP-RP > 5 are genuine red giants
+    d_ = df.dropna(subset=["bpmag", "rpmag"]).copy()
+    d_["bprp"] = d_.bpmag - d_.rpmag
+    red = d_[d_.bprp > 5]
+    check("objects with BP-RP > 5", len(red), 21818, tol=0, fmt="{}")
+    check("BP-RP>5 dominated by lpv (%)",
+          100 * (red.vartype == "lpv").mean(), 86.0, tol=1.0, fmt="{:.0f}")
+    check("BP-RP>5 median W1", red.w1mag.median(), 8.39, tol=0.02)
+
+    # =================================================================
+    print("\n" + "=" * 72)
+    print("SECTION 9 - transient rule replacement")
+    print("=" * 72)
+    tf = ROOT / "results" / "varwise_transient_corrections.csv"
+    if tf.exists():
+        corr = pd.read_csv(tf)
+        check("total corrected objects", len(corr), 79293, tol=0, fmt="{}")
+        check("validated tier", int((corr.reliability == "validated").sum()),
+              17539, tol=0, fmt="{}")
+        check("high tier", int((corr.reliability == "high").sum()), 31344,
+              tol=0, fmt="{}")
+        check("low tier", int((corr.reliability == "low").sum()), 27702,
+              tol=0, fmt="{}")
+        check("usable share (validated + high)",
+              100 * corr.reliability.isin(["validated", "high"]).mean(), 61.6,
+              tol=0.2, fmt="{:.1f}")
+        check("ecl predictions", int((corr.corrected_class == "ecl").sum()),
+              21646, tol=0, fmt="{}")
+        check("ecl predictions flagged low",
+              int(((corr.corrected_class == "ecl") &
+                   (corr.reliability == "low")).sum()), 21289, tol=0, fmt="{}")
+        for cls, f1v in [("agn", 0.981), ("lpv", 0.978), ("yso", 0.932),
+                         ("cv", 0.915), ("ecl", 0.598), ("sn", 0.316),
+                         ("cep", 0.049)]:
+            sub_ = corr[corr.corrected_class == cls]
+            if len(sub_):
+                check(f"{cls} class CV F1", sub_.class_cv_f1.iloc[0], f1v, tol=0.002)
+    else:
+        print("  (corrections table absent - run scripts/apply_transient_fix.py)")
+
+    # =================================================================
+    print("\n" + "=" * 72)
+    print("SECTION 10 - period-luminosity validation")
+    print("=" * 72)
+    pl = ROOT / "data" / "raw" / "pl_sample.parquet"
+    if pl.exists():
+        d = pd.read_parquet(pl)
+        d = d[np.isfinite(d.w1mag) & (d.plx > 0) & (d.period1 > 0)].copy()
+        d["M"] = d.w1mag + 5 * np.log10(d.plx) - 10
+        rr_ = d[d.vartype == "rr"]
+        pure_rr = rr_[rr_.tier == "pure"]
+        ext_rr = rr_[rr_.tier == "extended"]
+        check("Pure rr n (plx S/N>5)", len(pure_rr), 6671, tol=0, fmt="{}")
+        check("Extended rr n (plx S/N>5)", len(ext_rr), 221982, tol=0, fmt="{}")
+        check("Pure rr median M_W1", pure_rr.M.median(), -0.59, tol=0.02)
+        check("Extended rr median M_W1", ext_rr.M.median(), 2.51, tol=0.02)
+        check("Extended rr conf>=0.9 median M_W1",
+              ext_rr[ext_rr.confidence >= 0.9].M.median(), 2.47, tol=0.02)
+        check("Extended rr psig>20 median M_W1",
+              ext_rr[ext_rr.period_significance > 20].M.median(), -0.55, tol=0.02)
+        check("Extended rr psig>20 n",
+              int((ext_rr.period_significance > 20).sum()), 7624, tol=0, fmt="{}")
+        check("offset of Extended rr from RR Lyrae locus",
+              ext_rr.M.median() - (-0.5), 3.01, tol=0.02)
+    else:
+        print("  (PL sample absent - run scripts/pl_relation_check.py)")
+
+    # =================================================================
+    print("\n" + "=" * 72)
+    print("SECTION 11 - YSO recall")
+    print("=" * 72)
+    check("YSO count in Track B", int((lab_b_all == "yso").sum()), 11998,
+          tol=0, fmt="{}")
+    check("VarWISE YSO recall (from audit)", rep["yso"]["recall"], 0.436,
+          tol=0.003)
+    check("VarWISE YSO precision", rep["yso"]["precision"], 0.940, tol=0.003)
+
     print("\n" + "=" * 72)
     print(f"{CHECKS} checks run, {len(FAILURES)} failure(s)")
     print("=" * 72)
