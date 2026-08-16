@@ -1,0 +1,31 @@
+====================================================================================
+STRUCTURAL SCAN - VarWISE Extended Catalog (via TAP aggregates)
+====================================================================================
+
+  total rows        : 1,918,082
+  unique cluster_id : 1,918,082  (OK)
+  unique designation: 1,918,082  (OK)
+
+  coordinate range checks:
+    ra outside [0,360] : 0
+    dec outside [-90,90]: 0
+
+  amplitude / SNR / period range checks:
+    negative w1_amp                                0
+    negative w2_amp                                0
+    negative variability_snr                       0
+    negative n_obs                                 0
+    negative period1                               0
+    n_obs < 20 (marginal for periods)              0
+    confidence outside [0,1]                       0
+
+  blended_source / latent_artifact bounds (Pure caps both at 0.5):
+    blended_source  [0.040, 1.000]
+    latent_artifact [0.020, 0.860]
+
+  vartype completeness:
+    rows with null vartype: 0
+
+  cv/sn mechanism split (mirrors the Pure-tier finding):
+    cv   total=  69,418  rule=  51,298 (73.9%)  classifier= 18,120 (26.1%)  mismatched=0
+    sn   total=   9,875  rule=   9,875 (100.0%)  classifier=      0 (0.0%)  mismatched=0

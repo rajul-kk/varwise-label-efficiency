@@ -377,6 +377,14 @@ looks like bad cross-matching. It is not: 86% are `lpv` and their median W1 is
 8.39 versus 12.60 for the catalog overall. Miras genuinely reach BP−RP > 5.
 These are real red giants.
 
+**The structural scan was extended to the Extended Catalog** (via TAP
+aggregates rather than a full download — 1.9M rows). It is equally clean:
+1,918,082 unique `cluster_id` and `designation`, zero out-of-range
+coordinates, zero negative amplitudes/SNR/periods, zero `n_obs` < 20. The
+`cv`/`sn` mechanism split reproduces at this tier too, with a different
+mixing ratio: `cv` is 73.9% rule-assigned / 26.1% classifier-assigned in
+Extended versus 82.8%/17.2% in Pure; `sn` is 100% rule-assigned in both.
+
 ---
 
 ## Novelty assessment (re-checked 16 August 2026)
