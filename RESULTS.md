@@ -122,7 +122,15 @@ and reproduce on both boosters.
 
 Track A trains on VarWISE's own `vartype` predictions; Track B on independent
 SIMBAD types. Label savings are **72.4% on Track A versus 85.7% on Track B**
-(same estimator).
+on LightGBM, and this now checks out on XGBoost too — **62.4% on Track A
+versus 86.1% on Track B**. The distillation/real-labels gap holds on both
+estimators, and is if anything *larger* on XGBoost (23.7 percentage points)
+than on LightGBM (13.3 points):
+
+| estimator | Track A (distillation) | Track B (real labels) | gap |
+|---|---|---|---|
+| LightGBM | 72.4% | 85.7% | 13.3 pts |
+| XGBoost | 62.4% | 86.1% | 23.7 pts |
 
 The reason is that VarWISE's predicted class distribution is far more balanced
 than reality — it over-predicts the rare classes:

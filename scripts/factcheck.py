@@ -72,6 +72,17 @@ def main():
     check("margin labels-to-match", pxm.labels_to_match.iloc[0], 127, tol=1, fmt="{:.0f}")
     check("margin label saving (XGB)", pxm.label_saving.iloc[0], 0.861, tol=0.003)
 
+    print("\nTrack A / XGBoost (distillation, robustness check):")
+    refax = pd.read_csv(RDIR / "reference_track_a_xgb.csv")
+    check("full-supervised macro F1", refax.macro_f1.mean(), 0.9102, tol=0.001)
+    pax = pd.read_csv(RDIR / "primary_savings_track_a_xgb.csv")
+    paxm = pax[(pax.metric == "macro_f1") & (pax.strategy == "margin")]
+    check("margin label saving (Track A, XGB)", paxm.label_saving.iloc[0],
+          0.624, tol=0.003)
+    check("Track A XGB saving < Track B XGB saving (distillation gap holds)",
+          float(paxm.label_saving.iloc[0] < pxm.label_saving.iloc[0]), 1.0,
+          tol=0, fmt="{:.0f}")
+
     # --- LightGBM Track B ---
     m_l, budget_l, last_l = final_scores("b")
     refl = pd.read_csv(RDIR / "reference_track_b.csv")

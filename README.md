@@ -66,17 +66,19 @@ Track B (independent SIMBAD labels), XGBoost — VarWISE's own booster family:
 - **Hard per-class quotas underperform random sampling** on both estimators —
   a negative result reproducing the same observation from the Chandra project.
 - **Distillation targets understate the benefit**: 72.4% saving against
-  VarWISE's own predictions versus 85.7% against real labels, because VarWISE
-  over-predicts rare classes and so looks more balanced than reality. This can
-  be formalized (majorization/Schur-convexity of the random-sampling
-  requirement), and the core mechanism — random sampling starves the rarest
-  class in a way that provably worsens as it gets rarer — holds up cleanly on
-  controlled synthetic data, including after a 10-seed rerun. Whether that
-  aggregates into a robust "savings track prevalence" prediction remains
-  genuinely open: a 10-seed rerun sharpened each scenario's own estimate but
-  left the correlation across scenarios *less* stable (ρ flipped from −0.31
-  to +0.70), traced to only 6 scenario points being tested, not to
-  insufficient seeds — see **[THEORY_NOTE.md](THEORY_NOTE.md)**.
+  VarWISE's own predictions versus 85.7% against real labels on LightGBM
+  (62.4% vs 86.1% on XGBoost — the gap holds on both estimators, and is
+  larger on XGBoost), because VarWISE over-predicts rare classes and so looks
+  more balanced than reality. This can be formalized (majorization/
+  Schur-convexity of the random-sampling requirement), and the core mechanism
+  — random sampling starves the rarest class in a way that provably worsens
+  as it gets rarer — holds up cleanly on controlled synthetic data, including
+  after a 10-seed rerun. Whether that aggregates into a robust "savings track
+  prevalence" prediction remains genuinely open: a 10-seed rerun sharpened
+  each scenario's own estimate but left the correlation across scenarios
+  *less* stable (ρ flipped from −0.31 to +0.70), traced to only 6 scenario
+  points being tested, not to insufficient seeds —
+  see **[THEORY_NOTE.md](THEORY_NOTE.md)**.
 
 ### Independent validation of VarWISE
 

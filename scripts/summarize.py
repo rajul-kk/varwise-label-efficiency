@@ -164,6 +164,7 @@ def main():
         ("b", "", "Track B (SIMBAD labels, LightGBM)"),
         ("b", "_xgb", "Track B (SIMBAD labels, XGBoost)"),
         ("a", "", "Track A (VarWISE vartype, LightGBM)"),
+        ("a", "_xgb", "Track A (VarWISE vartype, XGBoost)"),
     ]
     for track, tag, label in runs:
         section_curves(track, tag, label)
