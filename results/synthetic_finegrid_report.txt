@@ -1,0 +1,62 @@
+========================================================================================
+SYNTHETIC MAJORIZATION TEST, FINE-GRID REDESIGN
+========================================================================================
+
+16 t-values x 5 seeds = 80 (t, seed) pairs for the correlation
+(first pass: 6 t-values x 10 seeds, correlated only 6 scenario means)
+
+t-grid: [0.0, 0.067, 0.133, 0.2, 0.267, 0.333, 0.4, 0.467, 0.533, 0.6, 0.667, 0.733, 0.8, 0.867, 0.933, 1.0]
+
+========================================================================================
+PRIMARY TEST: F1 gap (margin - random) at fixed budget vs pi_min
+Correlated at the (t, seed) level -- 80 points, not 16 scenario means
+========================================================================================
+
+  budget=150: Spearman rho(pi_min, gap) = -0.068  (n=80 (t,seed) pairs)
+    mean gap at low pi_min (<0.05): +0.0588
+    mean gap at high pi_min (>0.12): +0.0477
+
+  budget=300: Spearman rho(pi_min, gap) = -0.334  (n=80 (t,seed) pairs)
+    mean gap at low pi_min (<0.05): +0.0614
+    mean gap at high pi_min (>0.12): +0.0167
+
+  budget=450: Spearman rho(pi_min, gap) = -0.337  (n=80 (t,seed) pairs)
+    mean gap at low pi_min (<0.05): +0.0532
+    mean gap at high pi_min (>0.12): +0.0156
+
+  For comparison, scenario-MEAN version (like pass 1's approach):
+    budget=150: rho over 16 scenario means = -0.197
+    budget=300: rho over 16 scenario means = -0.603
+    budget=450: rho over 16 scenario means = -0.565
+
+========================================================================================
+SANITY: raw mechanism (random's own rarest-class F1 vs pi_min)
+========================================================================================
+  budget=150: rho(pi_min, random's own rare-F1) = +0.789  (should be strongly positive, as in both prior runs)
+  budget=300: rho(pi_min, random's own rare-F1) = +0.839  (should be strongly positive, as in both prior runs)
+  budget=450: rho(pi_min, random's own rare-F1) = +0.847  (should be strongly positive, as in both prior runs)
+
+========================================================================================
+SCENARIO MEANS (for inspection)
+========================================================================================
+
+       t   pi_min  rand F1@300  margin F1@300   gap@300
+   0.000   0.0200       0.4052         0.4495    0.0443
+   0.067   0.0298       0.4316         0.5292    0.0976
+   0.133   0.0396       0.5313         0.5502    0.0189
+   0.200   0.0493       0.5082         0.5928    0.0846
+   0.267   0.0591       0.6290         0.6561    0.0271
+   0.333   0.0689       0.5876         0.6577    0.0701
+   0.400   0.0787       0.6023         0.6828    0.0804
+   0.467   0.0884       0.6384         0.7189    0.0806
+   0.533   0.0982       0.6512         0.6977    0.0465
+   0.600   0.1080       0.7063         0.6663   -0.0401
+   0.667   0.1178       0.7002         0.7388    0.0386
+   0.733   0.1276       0.7119         0.7429    0.0310
+   0.800   0.1373       0.7292         0.7334    0.0042
+   0.867   0.1471       0.7410         0.7555    0.0145
+   0.933   0.1569       0.7422         0.7665    0.0243
+   1.000   0.1667       0.7938         0.8032    0.0094
+
+Wrote D:\Work\NEOWISE-analysis\results\synthetic_finegrid_curves.csv
+Wrote D:\Work\NEOWISE-analysis\results\synthetic_finegrid_summary.csv

@@ -464,6 +464,34 @@ def main():
               "rho(pi_min, rare-class-specific savings) = +0.700" in txt,
               True, tol=0, fmt="{}")
 
+    print("\n  fine-grid redesign (16 t-values x 5 seeds):")
+    fg_curves = ROOT / "results" / "synthetic_finegrid_curves.csv"
+    fg_summary = ROOT / "results" / "synthetic_finegrid_summary.csv"
+    if fg_curves.exists() and fg_summary.exists():
+        fgd = pd.read_csv(fg_curves)
+        fgs = pd.read_csv(fg_summary)
+        check("(t,seed) pairs", len(fgd), 80, tol=0, fmt="{}")
+        check("scenario count", len(fgs), 16, tol=0, fmt="{}")
+        for budget, exp_scen, exp_pair in [(150, -0.197, -0.068),
+                                           (300, -0.603, -0.334),
+                                           (450, -0.565, -0.337)]:
+            check(f"rho scenario-mean, budget={budget}",
+                  fgs["pi_min"].corr(fgs[f"gap_b{budget}"], method="spearman"),
+                  exp_scen, tol=0.005)
+            check(f"rho (t,seed), budget={budget}",
+                  fgd["pi_min"].corr(fgd[f"gap_b{budget}"], method="spearman"),
+                  exp_pair, tol=0.005)
+        check("cross-budget consistency (gap_b300 vs gap_b450, scenario)",
+              fgs["gap_b300"].corr(fgs["gap_b450"]), 0.872, tol=0.01)
+        check("cross-budget consistency (gap_b300 vs gap_b450, per-point)",
+              fgd["gap_b300"].corr(fgd["gap_b450"]), 0.771, tol=0.01)
+        for budget, exp in [(150, 0.789), (300, 0.839), (450, 0.847)]:
+            check(f"raw mechanism rho, budget={budget}",
+                  fgd["pi_min"].corr(fgd[f"rand_f1_b{budget}"],
+                                     method="spearman"), exp, tol=0.005)
+    else:
+        print("  (fine-grid results absent - run synthetic_majorization_finegrid.py)")
+
     print("\n" + "=" * 72)
     print(f"{CHECKS} checks run, {len(FAILURES)} failure(s)")
     print("=" * 72)
