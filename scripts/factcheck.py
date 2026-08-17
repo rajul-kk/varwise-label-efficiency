@@ -572,6 +572,12 @@ def main():
 
         check("catalog-wide median n_obs (Pure)", df.n_obs.median(), 270,
               tol=0.5)
+
+        print("\n  celestial vs ecliptic pole density (NOVELTY.md check):")
+        check("density at ecliptic pole (dec 64-72)",
+              int(((df.dec > 64) & (df.dec < 72)).sum()), 7979, tol=0, fmt="{}")
+        check("density at celestial pole (dec>89.5)",
+              int((df.dec > 89.5).sum()), 2, tol=0, fmt="{}")
     else:
         print("  (concordance results absent - run untimely_ecliptic_concordance.py)")
 
