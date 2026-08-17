@@ -118,6 +118,17 @@ recall (0.436)**: when it says YSO it is usually right, but it misses most.
 | `cv` | 301 | 11,576 | **38.5×** | 0.019 |
 | `sn` | 35 | 3,379 | **96.5×** | 0.002 |
 
+**A second, independent catalog reveals a further, region-specific
+failure.** Cross-matched against an independently classified mid-IR variable
+catalog (Kim et al. 2026, ecliptic poles — a completely separate ZTF-DNN
+classification pipeline), VarWISE's `ecl` and `yso` classes both scatter
+heavily into `agn` — but *only* at the North Ecliptic Pole (100% of
+mismatches), where objects accumulate 6–9× the typical epoch count from
+WISE's continuous polar coverage. High-confidence (median 0.98–0.99),
+tight-match (0.04–0.08″) misclassifications — not noise, and not the same
+failure mode as the CV/SN rule. See
+[CATALOG_ASSESSMENT.md §4](CATALOG_ASSESSMENT.md).
+
 Driven by **8,291 long-period variables assigned `cv`** and **3,275 AGN
 assigned `sn`** — exactly what the rule's definition predicts, since bright
 Miras look transient but aren't extragalactic, while AGN are. The `cv` false

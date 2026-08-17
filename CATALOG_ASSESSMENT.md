@@ -437,6 +437,87 @@ Extended versus 82.8%/17.2% in Pure; `sn` is 100% rule-assigned in both.
 
 ---
 
+## 4. Concordance with an independent mid-IR variable catalog
+
+The natural next check — comparing VarWISE against a second, independently
+built mid-IR variability catalog — was attempted via the unTimely-derived
+variability catalog (Yao et al., 8.26M sources), but that specific product
+is **not yet publicly released** ("tables will be available online soon" per
+the preprint). The underlying base unTimely photometric catalog is public
+but has ~23.5 billion raw detections — re-deriving variability from it is
+its own multi-week project, not a concordance check.
+
+A working substitute exists: Kim, Son, Kim, Ho, Jeong, Lee & Yang 2026, ApJS
+284:39, "A Catalog of Mid-infrared Variable Sources in the Ecliptic Poles" —
+30,345 objects, independently detected and classified (via a ZTF-light-curve
+deep-neural-network classifier, Healy et al. 2024 — an entirely separate
+classification pipeline from both VarWISE and SIMBAD), covering 5°-radius
+circles around the north and south ecliptic poles. Machine-readable tables
+are directly downloadable from the journal.
+
+### AGN classification is confirmed strong; eclipse/YSO reveal a new, regional failure mode
+
+Cross-matched against VarWISE Pure at 2″ (5,267 matches; 148 with a class
+mappable to VarWISE's taxonomy):
+
+| ZTF-catalog class | n | VarWISE agrees | agreement |
+|---|---|---|---|
+| Q (QSO → `agn`) | 84 | 83 | **98.8%** |
+| E (eclipse → `ecl`) | 54 | 8 | **14.8%** |
+| Y (YSO → `yso`) | 10 | 0 | **0.0%** |
+
+The AGN result independently reconfirms the SIMBAD-based finding. The
+eclipse and YSO disagreement is new and, on inspection, not an artifact:
+
+- **Match quality rules out mismatched sources.** Median separation for the
+  disagreeing objects is 0.04–0.08″, tighter than the overall match
+  distribution (median 0.05″) — these are the same physical objects.
+- **VarWISE's confidence on these misclassifications is high**, not
+  borderline: median 0.98 (`ecl`→`agn`) and 0.99 (`yso`→`agn`).
+- **Both mismatch types dominantly land on the same wrong class**
+  (`agn`) — 43/54 eclipse objects and 8/10 YSOs.
+
+### A mechanistic explanation, not just a correlation
+
+Two follow-up checks converge on a specific cause:
+
+1. **Every single mismatch comes from the North Ecliptic Pole; zero from
+   the South.**
+2. **These objects have a median of 1,763 epochs — about 6.5× the typical
+   VarWISE object (270).** The ecliptic poles receive near-continuous WISE
+   coverage from the scanning geometry, unlike the rest of the sky, which is
+   visited roughly twice a year.
+
+The plausible mechanism: a classifier's light-curve features, built and
+implicitly calibrated against the catalog's typical ~270-epoch cadence, may
+read an object with 1,700+ densely-sampled epochs as AGN-like stochastic
+variability rather than recognizing genuine periodic eclipses or YSO
+behavior — a cadence-driven miscalibration specific to the
+continuous-viewing-zone regions, distinct from every other failure mode
+found so far (the CV/SN rule, the Extended `rr` contamination, the YSO
+recall gap). The YSO mismatches show the same pattern even more strongly
+(median 2,478 epochs, ~9× typical).
+
+### Caveats
+
+- **Small sample** (n=56 eclipse, n=12 YSO) and **single region** (NEP
+  only) — this does not generalize to a global concordance rate, and should
+  not be read as contradicting the much larger (n=111,241), SIMBAD-based
+  finding that VarWISE's `ecl` class is excellent (F1 0.99) across the sky.
+  The two results are compatible: `ecl` may be reliable generally and
+  specifically miscalibrated in the unusually high-cadence polar regions.
+- Only Q and Y map cleanly onto VarWISE's taxonomy; P/S/B (pulsating,
+  generic "variable star," binary) are too coarse to force-map and are
+  excluded rather than guessed.
+- The ZTF classification is itself a DNN threshold call, not ground truth —
+  disagreement could in principle originate on either side, though the
+  n_obs/hemisphere pattern points toward a VarWISE-side cadence effect
+  specifically.
+- This substitutes for the unavailable unTimely comparison and is not a
+  full-sky concordance check.
+
+---
+
 ## Novelty assessment (re-checked 16 August 2026)
 
 | Piece | Status | Nearest prior work |

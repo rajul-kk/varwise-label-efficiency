@@ -492,6 +492,89 @@ def main():
     else:
         print("  (fine-grid results absent - run synthetic_majorization_finegrid.py)")
 
+    # =================================================================
+    print("\n" + "=" * 72)
+    print("SECTION 13 - ecliptic-poles concordance (CATALOG_ASSESSMENT.md sec 4)")
+    print("=" * 72)
+    ec_report = ROOT / "results" / "ecliptic_poles_concordance.txt"
+    if ec_report.exists():
+        from scipy.spatial import cKDTree
+
+        t1p = ROOT / "data" / "raw" / "ecliptic_poles_t1.txt"
+        t3p = ROOT / "data" / "raw" / "ecliptic_poles_t3.txt"
+        t1 = pd.read_fwf(t1p, colspecs=[(0, 24), (25, 33), (34, 42), (43, 47),
+                                        (48, 52), (53, 57), (58, 63), (64, 68),
+                                        (69, 74), (75, 79), (80, 85), (86, 90)],
+                         names=["name", "ra", "dec", "pvar1", "pvar2", "r",
+                               "w1mag", "e_w1mag", "w2mag", "e_w2mag",
+                               "w3mag", "e_w3mag"], skiprows=21)
+        t3 = pd.read_fwf(t3p, colspecs=[(0, 26), (27, 32), (33, 38), (39, 44),
+                                        (45, 46), (47, 54), (55, 60), (61, 64),
+                                        (65, 68), (69, 70), (71, 72)],
+                         names=["name", "z_desi", "z_quaia", "z_milliquas",
+                               "desi_type", "pm", "e_pm", "n_gaia", "n_ls",
+                               "class_ztf05", "class_ztf"], skiprows=36)
+        assert len(t1) == len(t3), f"table length mismatch: {len(t1)} vs {len(t3)}"
+        cat = pd.concat([t1.reset_index(drop=True),
+                         t3[["class_ztf"]].reset_index(drop=True)], axis=1)
+        check("ecliptic-poles catalog row count", len(cat), 30345, tol=0, fmt="{}")
+
+        def xyz(ra, dec):
+            r, d = np.radians(ra), np.radians(dec)
+            return np.column_stack([np.cos(d) * np.cos(r), np.cos(d) * np.sin(r),
+                                    np.sin(d)])
+
+        tree = cKDTree(xyz(df.ra.values, df.dec.values))
+        chord = 2 * np.sin(np.radians(2.0 / 3600) / 2)
+        d_, i_ = tree.query(xyz(cat.ra.values, cat.dec.values), k=1)
+        matched = d_ < chord
+        check("crossmatch count at 2 arcsec", int(matched.sum()), 5267,
+              tol=0, fmt="{}")
+
+        mm = cat[matched].copy()
+        mm["vw_vartype"] = df.iloc[i_[matched]]["vartype"].values
+        mm["vw_confidence"] = df.iloc[i_[matched]]["confidence"].values
+        mm["n_obs"] = df.iloc[i_[matched]]["n_obs"].values
+        mm["sep_arcsec"] = np.degrees(2 * np.arcsin(
+            np.minimum(d_[matched], 1.0) / 2)) * 3600
+        mm["hemisphere"] = np.where(mm.dec > 0, "NEP", "SEP")
+
+        agn_q = mm[mm.class_ztf == "Q"]
+        check("Q(ZTF) n matched", len(agn_q), 84, tol=0, fmt="{}")
+        check("Q->agn agreement", (agn_q.vw_vartype == "agn").mean(), 0.988,
+              tol=0.005)
+
+        ecl_e = mm[mm.class_ztf == "E"]
+        check("E(ZTF) n matched", len(ecl_e), 54, tol=0, fmt="{}")
+        ecl_mapped = ecl_e.vw_vartype.replace({"ea": "ecl", "ew": "ecl"})
+        check("E->ecl agreement", (ecl_mapped == "ecl").mean(), 0.148, tol=0.005)
+
+        yso_y = mm[mm.class_ztf == "Y"]
+        check("Y(ZTF) n matched", len(yso_y), 10, tol=0, fmt="{}")
+        check("Y->yso agreement", (yso_y.vw_vartype == "yso").mean(), 0.0,
+              tol=0.001)
+
+        ecl_agn = mm[(mm.class_ztf == "E") & (mm.vw_vartype == "agn")]
+        check("ecl->agn mismatch count", len(ecl_agn), 43, tol=0, fmt="{}")
+        check("ecl->agn all from NEP",
+              float((ecl_agn.hemisphere == "NEP").all()), 1.0, tol=0, fmt="{:.0f}")
+        check("ecl->agn median n_obs", ecl_agn.n_obs.median(), 1763, tol=5)
+        check("ecl->agn median confidence", ecl_agn.vw_confidence.median(),
+              0.9839, tol=0.002)
+        check("ecl->agn median separation (arcsec)",
+              ecl_agn.sep_arcsec.median(), 0.0393, tol=0.002)
+
+        yso_agn = mm[(mm.class_ztf == "Y") & (mm.vw_vartype == "agn")]
+        check("yso->agn mismatch count", len(yso_agn), 8, tol=0, fmt="{}")
+        check("yso->agn all from NEP",
+              float((yso_agn.hemisphere == "NEP").all()), 1.0, tol=0, fmt="{:.0f}")
+        check("yso->agn median n_obs", yso_agn.n_obs.median(), 2478, tol=5)
+
+        check("catalog-wide median n_obs (Pure)", df.n_obs.median(), 270,
+              tol=0.5)
+    else:
+        print("  (concordance results absent - run untimely_ecliptic_concordance.py)")
+
     print("\n" + "=" * 72)
     print(f"{CHECKS} checks run, {len(FAILURES)} failure(s)")
     print("=" * 72)

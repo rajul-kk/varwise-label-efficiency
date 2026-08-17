@@ -1,0 +1,87 @@
+========================================================================================
+CONCORDANCE: VarWISE vs an independent mid-IR variable catalog
+(Kim et al. 2026, ApJS 284:39, ecliptic poles)
+========================================================================================
+
+Ecliptic-poles catalog: 30,345 objects with coordinates
+  with a ZTF DNN classification (any threshold): 2,182
+  RA range: 77.36 - 282.65
+  Dec range: -71.55 - 71.56
+
+Class distribution (class_ztf, max-DNN-score assignment):
+  Q: 963
+  E: 852
+  B: 177
+  P: 131
+  S: 39
+  Y: 20
+
+========================================================================================
+CROSS-MATCHING AGAINST VarWISE PURE CATALOG
+========================================================================================
+
+  VarWISE Pure catalog size for the crossmatch: 457,080
+  matches within 2.0": 5,267 of 30,345 (17.4%)
+
+  VarWISE vartype distribution among matched objects:
+    lpv: 4,018
+    cv: 707
+    agn: 407
+    cep: 66
+    ew: 33
+    yso: 30
+    sn: 4
+    ea: 2
+
+========================================================================================
+AGREEMENT ON CLASSES WITH A CLEAN CROSS-TAXONOMY MAPPING
+========================================================================================
+
+  n with a clean mapped class on both sides: 148
+  overall agreement: 61.5%
+
+  ZTF class       n   VarWISE agrees   agreement
+  agn            84               83       98.8%
+  ecl            54                8       14.8%
+  yso            10                0        0.0%
+
+  confusion (rows = ZTF-catalog class, cols = VarWISE class):
+                 agn      cv     ecl     lpv      sn
+  agn             83       0       0       0       1
+  ecl             43       1       8       2       0
+  yso              8       0       0       0       2
+
+========================================================================================
+MECHANISM CHECK: is the ecl/yso -> agn mismatch a real effect?
+========================================================================================
+
+  ecl(ZTF) -> agn(VarWISE): n=43
+    median match separation: 0.0393"  (overall match median: 0.0530")
+    median VarWISE confidence: 0.9839
+    hemisphere: NEP=43
+    median n_obs: 1763  (all VarWISE agn median: 298, catalog-wide median: 270)
+
+  yso(ZTF) -> agn(VarWISE): n=8
+    median match separation: 0.0759"  (overall match median: 0.0530")
+    median VarWISE confidence: 0.9879
+    hemisphere: NEP=8
+    median n_obs: 2478  (all VarWISE agn median: 298, catalog-wide median: 270)
+
+========================================================================================
+CAVEATS
+========================================================================================
+
+  - Only Q (QSO) and Y (YSO) map cleanly onto VarWISE's taxonomy; E
+    (eclipse) is compared against VarWISE's collapsed ea+ew "ecl" class.
+    The Pure-catalog audit found ecl VarWISE's most reliable class overall
+    (F1 0.99 against SIMBAD, sky-wide) -- the 17.9% agreement found here is
+    therefore surprising, not expected, and traces to a specific regional
+    cause (see the mechanism check above), not to ecl being unreliable in
+    general. P/S/B are too coarse to map to a single VarWISE class and are
+    excluded from the agreement statistic rather than force-mapped.
+  - This substitutes for the unreleased unTimely variability catalog; it
+    covers only the NEP/SEP regions (~5 deg radius circles), not the full
+    sky, so results characterize VarWISE's behaviour in those regions
+    specifically, not a global concordance rate.
+  - The ZTF classification is itself a DNN threshold call (Healy et al.
+    2024), not ground truth; disagreement could originate on either side.

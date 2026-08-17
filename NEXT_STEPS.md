@@ -120,23 +120,39 @@ variability, a targeted recall improvement is directly valuable.
 
 ### 🥈 Tier 2 — good, but more work or more risk
 
-#### R4. VarWISE vs unTimely concordance study.
+#### R4. VarWISE vs unTimely concordance study. **[Attempted — see CATALOG_ASSESSMENT.md §4]**
 
 Two independent full-sky mid-IR variability catalogs built from the same
 underlying WISE imaging by different methods (single-exposure + VARnet vs
-coadd + Bayesian GMM). **Do they agree on which objects vary?** Where they
-disagree, which is right? unTimely reports 8.26M variables against VarWISE's
-1.92M — a 4× discrepancy demanding explanation.
+coadd + Bayesian GMM). **Do they agree on which objects vary?**
 
-- **Novelty:** high — nobody has compared them; unTimely variables is 9 months
-  old, VarWISE 3 months.
-- **Effort:** moderate–high (large cross-match, and unTimely's variability
-  definition differs from VarWISE's).
-- **Risk:** moderate. The catalogs use different detection thresholds, so
-  disagreement may be definitional rather than substantive — that needs
-  careful framing to be a result rather than a tautology.
+**Outcome:** the unTimely-derived variability catalog itself is **not yet
+publicly released** ("tables will be available online soon" per the
+preprint) — the direct comparison is currently blocked, not just hard. The
+base unTimely photometric catalog is public but has ~23.5 billion raw
+detections, too large to re-derive variability from in this project's scope.
 
-#### R5. Rebuild the light-curve features and redo the label-efficiency study properly.
+A working substitute was found and executed: Kim et al. 2026 (ApJS 284:39),
+an independently classified mid-IR variable catalog covering the ecliptic
+poles (30,345 objects, ZTF-DNN classification pipeline — unrelated to both
+VarWISE and SIMBAD). This surfaced a genuine, previously undocumented
+finding: VarWISE's `ecl` and `yso` classes both scatter heavily into `agn`
+specifically in the North Ecliptic Pole (100% of the mismatches), where
+objects accumulate ~6–9× the typical number of epochs due to WISE's
+continuous polar coverage — a plausible cadence-driven classifier
+miscalibration, distinct from every other failure mode found in this
+project. Full writeup, mechanism check, and caveats in
+`CATALOG_ASSESSMENT.md` §4 (`scripts/untimely_ecliptic_concordance.py`).
+
+- **Novelty:** confirmed high — this specific comparison did not exist.
+- **Effort:** moderate, once the unTimely blocker was identified and a
+  substitute located.
+- **Caveat:** small sample (n=54 eclipse, n=10 YSO), single region (NEP),
+  does not establish a full-sky concordance rate, and appears compatible
+  with (not contradicting) the much larger SIMBAD-based finding that `ecl`
+  is VarWISE's most reliable class overall.
+
+#### R5. Rebuild the light-curve features and redo the label-efficiency study properly. **[Attempted — confirmed infeasible at this scale]**
 
 The current study uses 28 catalog-derived features because VarWISE's 31
 light-curve features (Fourier coefficients, Stetson indices, χ² statistics)
@@ -144,11 +160,20 @@ are not in the published catalog. Rebuilding them from `neowiser_p1bs_psd`
 would turn the approximation into a genuine reproduction and let the AL result
 be stated against VarWISE's actual feature space.
 
+**Outcome:** checked directly rather than assumed. `neowiser_p1bs_psd`
+returned 13,397 detections for a single 0.05°×0.05° patch, taking 102
+seconds for that one `COUNT(*)` query alone. Extrapolated to full sky, the
+table is on the order of hundreds of billions of rows. Pulling per-object
+light curves for ~220,000 Track B objects at this query latency would take
+days, not a session — the earlier "high effort" estimate was, if anything,
+optimistic.
+
 - **Novelty:** low on its own — this is rigor, not discovery.
-- **Effort:** high (positional cross-match against a billion-row
-  single-exposure table).
+- **Effort:** confirmed high (positional cross-match against a
+  hundred-billion-row single-exposure table via per-query TAP access).
 - **Risk:** low scientifically, high on compute.
-- **Verdict:** worth doing only if the AL work is submitted for publication.
+- **Verdict unchanged:** not worth pursuing via TAP; would need a bulk-data
+  access path, and is worth doing only if the AL work goes to publication.
 
 #### R6. Mid-IR period–luminosity relations.
 
