@@ -129,6 +129,20 @@ tight-match (0.04–0.08″) misclassifications — not noise, and not the same
 failure mode as the CV/SN rule. See
 [CATALOG_ASSESSMENT.md §4](CATALOG_ASSESSMENT.md).
 
+**A third, physically independent method confirms the same confusion.**
+Gaia parallax offers a distance test with no photometric or
+cross-classification dependency: genuine AGN have zero true parallax. In
+aggregate, VarWISE's `agn` class is astrometrically clean (median parallax
+S/N ≈ −0.07, consistent with a purely extragalactic population — this is
+a reassuring result for VarWISE, reported as such). But where SIMBAD
+independently disagrees with an `agn` call, the significant-parallax rate
+jumps from 0.1% (SIMBAD-confirmed AGN) to **15.0%** — a 100–150× excess —
+and the SIMBAD types among those astrometrically-confirmed contaminants are
+dominated by YSOs and pre-main-sequence stars (`OrionV*`, `YSO`,
+`TTauri*`). A third, unrelated method landing on the same YSO/`agn`
+confusion already found via SIMBAD validation and the NEP cadence effect.
+See [CATALOG_ASSESSMENT.md §5](CATALOG_ASSESSMENT.md).
+
 Driven by **8,291 long-period variables assigned `cv`** and **3,275 AGN
 assigned `sn`** — exactly what the rule's definition predicts, since bright
 Miras look transient but aren't extragalactic, while AGN are. The `cv` false

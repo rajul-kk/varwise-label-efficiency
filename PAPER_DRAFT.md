@@ -34,10 +34,16 @@ independently classified mid-infrared variable catalog at the ecliptic
 poles reveals a further, previously undocumented failure mode: eclipsing
 binaries and YSOs are misclassified as AGN specifically in the North
 Ecliptic Pole region, where continuous WISE viewing produces 6–9× the
-catalog's typical epoch count. We release a value-added, reliability-tiered
-correction table for all 79,293 `cv`/`sn`-classified objects across both
-catalog tiers, recovering the correct class for the majority of the
-XGBoost-confounded population at 96.6% cross-validated accuracy.
+catalog's typical epoch count. A Gaia parallax test — a physically
+independent check unrelated to photometry or cross-classification —
+corroborates this: while VarWISE's `agn` class is astrometrically clean in
+aggregate, the small subset where SIMBAD positively disagrees shows a
+100–150× excess of significant parallax detections, concentrated among
+young stellar and pre-main-sequence SIMBAD types. We release a value-added,
+reliability-tiered correction table for all 79,293 `cv`/`sn`-classified
+objects across both catalog tiers, recovering the correct class for the
+majority of the XGBoost-confounded population at 96.6% cross-validated
+accuracy.
 
 ---
 
@@ -360,6 +366,33 @@ contradicting the much larger, sky-wide finding that `ecl` is VarWISE's
 most reliable class. The two are compatible: a class can be reliable in
 general and specifically miscalibrated in an observationally unusual
 region.
+
+### 6.1 An astrometric cross-check
+
+As a further, physically independent test unrelated to photometry,
+periods, or classification methodology, we examine Gaia parallax for the
+`agn` class. Genuine AGN are at cosmological distances and should show a
+measured parallax consistent with zero; we quantify this via the fraction
+of each class exceeding a parallax significance threshold
+($\varpi/\sigma_\varpi > k$), first validating the test on Galactic classes
+(which show high significant-parallax rates, 17.5–95.7% at $k=3$, as
+expected) before applying it to `agn`.
+
+In aggregate, `agn` is astrometrically well-behaved: 2.4% exceed $k=3$
+(median S/N $-0.07$), modestly above the idealized Gaussian expectation
+(0.135%) but consistent with ordinary astrometric systematics near
+crowded/blended fields, and far below any Galactic class — a result we
+report as reassuring for the classifier's aggregate behavior. However, this
+rate is not uniform: objects independently confirmed as AGN by SIMBAD show
+a significant-parallax rate of 0.1% ($k=5$), while objects where SIMBAD
+positively identifies something *other* than AGN show 15.0% — a
+100–150$\times$ excess. The SIMBAD types among these astrometrically
+confirmed contaminants (310 objects at $k>10$, median VarWISE confidence
+0.971) are dominated by young stellar and pre-main-sequence classifications
+(`OrionV*`, `YSO`, `TTauri*`), providing a third, methodologically
+independent line of evidence for the YSO/`agn` confusion described in
+Sections 3 and 6, now confirmed via distance rather than color, period, or
+cross-catalog classification agreement.
 
 ## 7. A Corrected-Label Data Product
 

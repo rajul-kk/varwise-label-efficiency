@@ -581,6 +581,71 @@ def main():
     else:
         print("  (concordance results absent - run untimely_ecliptic_concordance.py)")
 
+    # =================================================================
+    print("\n" + "=" * 72)
+    print("SECTION 14 - astrometric consistency check (CATALOG_ASSESSMENT.md sec 5)")
+    print("=" * 72)
+    astro_report = ROOT / "results" / "astrometric_consistency_check.txt"
+    if astro_report.exists():
+        from scipy.spatial import cKDTree
+        dd = df[df.plx.notna() & df.e_plx.notna() & (df.e_plx > 0)].copy()
+        dd["plx_snr"] = dd.plx / dd.e_plx
+
+        def sfrac(sub, k):
+            snr = sub.plx_snr.dropna()
+            return float((snr > k).mean()) if len(snr) else float("nan")
+
+        check("objects with usable parallax", len(dd), 384596, tol=0, fmt="{}")
+
+        for vt, n_exp, f3_exp, f5_exp in [
+                ("ew", 72520, 0.957, 0.918), ("ea", 45969, 0.922, 0.853),
+                ("rr", 12730, 0.769, 0.524), ("yso", 11141, 0.617, 0.470),
+                ("cep", 3084, 0.572, 0.476), ("lpv", 146392, 0.175, 0.089)]:
+            sub = dd[dd.vartype == vt]
+            check(f"{vt} n(plx)", len(sub), n_exp, tol=0, fmt="{}")
+            check(f"{vt} >3sig fraction", sfrac(sub, 3), f3_exp, tol=0.003)
+            check(f"{vt} >5sig fraction", sfrac(sub, 5), f5_exp, tol=0.003)
+
+        agn_ = dd[dd.vartype == "agn"]
+        sn_ = dd[dd.vartype == "sn"]
+        check("agn n(plx)", len(agn_), 58494, tol=0, fmt="{}")
+        check("agn >3sig fraction", sfrac(agn_, 3), 0.024, tol=0.002)
+        check("agn median plx SNR", agn_.plx_snr.median(), -0.07, tol=0.01)
+        check("sn n(plx)", len(sn_), 8368, tol=0, fmt="{}")
+        check("sn >3sig fraction", sfrac(sn_, 3), 0.016, tol=0.002)
+
+        df["simbad_type"] = df["simbad_type"].astype("string").str.strip()
+        agn_full = df[(df.vartype == "agn") & df.plx.notna() & df.e_plx.notna()
+                     & (df.e_plx > 0)].copy()
+        agn_full["plx_snr"] = agn_full.plx / agn_full.e_plx
+        agn_types = {"QSO", "Seyfert1", "Seyfert2", "Seyfert", "BLLac",
+                    "Blazar", "AGN", "AGN_Candidate", "Blazar_Candidate"}
+        confirmed = agn_full[agn_full.simbad_type.isin(agn_types)]
+        discordant = agn_full[~agn_full.simbad_type.isin(agn_types) &
+                              agn_full.simbad_type.notna() &
+                              (agn_full.simbad_type != "")]
+        check("SIMBAD-confirmed AGN n", len(confirmed), 14084, tol=0, fmt="{}")
+        check("SIMBAD-confirmed AGN >5sig", sfrac(confirmed, 5), 0.001, tol=0.002)
+        check("SIMBAD-discordant n", len(discordant), 941, tol=0, fmt="{}")
+        check("SIMBAD-discordant >5sig", sfrac(discordant, 5), 0.150, tol=0.005)
+        check("SIMBAD-discordant >10sig", sfrac(discordant, 10), 0.091, tol=0.005)
+
+        strong = agn_full[agn_full.plx_snr > 10]
+        check("high-parallax agn contaminants (SNR>10)", len(strong), 310,
+              tol=0, fmt="{}")
+        check("contaminants median VarWISE confidence",
+              strong.confidence.median(), 0.9714, tol=0.002)
+
+        ra_r, dec_r = np.radians(df.ra.values), np.radians(df.dec.values)
+        xyz_ = np.column_stack([np.cos(dec_r) * np.cos(ra_r),
+                                np.cos(dec_r) * np.sin(ra_r), np.sin(dec_r)])
+        tree_ = cKDTree(xyz_)
+        chord_ = 2 * np.sin(np.radians(3.0 / 3600.0) / 2)
+        n_pairs = len(tree_.query_pairs(r=chord_))
+        check("near-duplicate pairs within 3 arcsec", n_pairs, 0, tol=0, fmt="{}")
+    else:
+        print("  (astrometric check absent - run astrometric_consistency_check.py)")
+
     print("\n" + "=" * 72)
     print(f"{CHECKS} checks run, {len(FAILURES)} failure(s)")
     print("=" * 72)

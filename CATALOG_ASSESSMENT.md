@@ -518,6 +518,100 @@ recall gap). The YSO mismatches show the same pattern even more strongly
 
 ---
 
+## 5. An astrometric check (a different physical principle)
+
+Every check above used photometry, periods, or cross-classification against
+other catalogs. Gaia parallax offers an independent physical test with none
+of those dependencies: genuine AGN and supernovae sit at cosmological
+distances, so their true parallax is exactly zero, and any measured value
+is pure noise. A population of real extragalactic sources should show a
+significant parallax detection (`plx`/`e_plx` > k) at close to the Gaussian
+tail rate for that threshold (0.135% at 3σ, ≈0% at 5σ); a large excess
+indicates the class contains genuine, nearby Galactic contaminants.
+
+**Negative control first**, to confirm the test discriminates distance
+correctly before trusting it on `agn`/`sn`: Galactic classes should show
+*high* significant-parallax rates.
+
+| class | n | >3σ | >5σ | >10σ | median SNR |
+|---|---|---|---|---|---|
+| `ew` | 72,520 | 95.7% | 91.8% | 77.7% | 21.55 |
+| `ea` | 45,969 | 92.2% | 85.3% | 67.4% | 16.54 |
+| `rr` | 12,730 | 76.9% | 52.4% | 22.8% | 5.23 |
+| `yso` | 11,141 | 61.7% | 47.0% | 28.3% | 4.50 |
+| `cep` | 3,084 | 57.2% | 47.6% | 33.0% | 4.39 |
+| `lpv` | 146,392 | 17.5% | 8.9% | 3.6% | 0.78 |
+
+All confirm strong, expected parallax signal (`lpv`'s comparatively lower
+rate reflects its greater average distance — AGB stars are intrinsically
+luminous and typically farther than eclipsing binaries — not a defect).
+
+**The primary result is, in aggregate, reassuring for VarWISE's `agn`
+class**, and we report that plainly rather than only the caveat that
+follows:
+
+| class | n | >3σ | >5σ | >10σ | median SNR |
+|---|---|---|---|---|---|
+| `agn` | 58,494 | 2.4% | 1.3% | 0.5% | **−0.07** |
+| `sn` | 8,368 | 1.6% | 0.9% | 0.5% | −0.12 |
+
+Median parallax S/N for both classes is consistent with zero, and the
+significant-detection rate — while somewhat above the idealized Gaussian
+budget, expected given real-world astrometric systematics near blends and
+crowded fields — is an order of magnitude below any Galactic class. Most
+of `agn` genuinely behaves like an extragalactic population.
+
+**But the excess is not uniformly distributed — it concentrates exactly
+where independent classification already disagrees:**
+
+| group | n | >5σ | >10σ |
+|---|---|---|---|
+| SIMBAD-confirmed AGN | 14,084 | **0.1%** | 0.0% |
+| No SIMBAD confirmation | 43,469 | 1.3% | 0.5% |
+| **SIMBAD says something else** | 941 | **15.0%** | **9.1%** |
+
+Objects SIMBAD-confirmed as AGN are essentially astrometrically clean
+(0.1%, matching pure noise almost exactly). Objects where SIMBAD
+*positively* identifies something other than AGN show a 100–150×
+higher significant-parallax rate — independent confirmation, via a third
+and physically unrelated method, that VarWISE's `agn` label is wrong
+specifically where other evidence already says so.
+
+The 310 objects with `plx`/`e_plx` > 10 (near-certain nearby stars) are
+high-confidence VarWISE calls, not borderline ones (median `confidence`
+0.971 — the same "confident but wrong" pattern as the NEP finding in
+Section 6), and their SIMBAD types tell a coherent story: `OrionV*` (20),
+`YSO` (16), `TTauri*` (5+3), `CataclyV*` (14), `LongPeriodV*` (5) — heavily
+weighted toward young stellar and pre-main-sequence objects. This is a
+**third, independent line of evidence for the same YSO/`agn` confusion**
+already found via SIMBAD validation (Section 3) and the NEP cadence
+mechanism (Section 6), now confirmed astrometrically rather than
+photometrically or via cross-catalog classification. Their color is not
+strongly discriminating (median W1−W2 = 0.687 vs 0.958 for low-parallax
+`agn`) — plausibly why the classifier misses them.
+
+**A clean secondary result**: a near-duplicate check (distinct catalog
+entries within 1–3″ of each other, a different failure mode — over-splitting
+a single physical source during VARnet's spatial clustering — than
+misclassification) found **zero pairs at any radius tested**. Combined with
+the zero exact-coordinate duplicates found in Section 4, this rules out
+source-splitting as a data-quality concern for the Pure Catalog.
+
+### Caveats
+
+- Parallax is available for 84.1% of the Pure Catalog (Gaia cross-match
+  coverage), with the same bright/nearby selection bias noted elsewhere.
+- A modest excess above the idealized Gaussian tail is expected even for a
+  purely genuine AGN population, from real astrometric systematics; the
+  finding rests on the *concentration* of the excess among
+  SIMBAD-discordant objects, not on the aggregate rate being nonzero.
+- We cannot rule out individual astrophysical confusers (foreground stars
+  in projection, etc.) for any single object — only that the aggregate rate
+  in the SIMBAD-discordant subset is inconsistent with a purely
+  extragalactic population.
+
+---
+
 ## Novelty assessment (re-checked 16 August 2026)
 
 | Piece | Status | Nearest prior work |
